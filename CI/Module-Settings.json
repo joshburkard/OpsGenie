@@ -1,0 +1,8 @@
+﻿{
+    "ModuleName":  "OpsGenie",
+    "ModuleVersion":  "0.0.00002",
+    "ModuleDescription":  "this module interact with OpsGenie API v2",
+    "ModuleAuthor":  "Josh Burkard (josh@burkard.it)",
+    "ModuleCompany":  "",
+    "ModulePrefix":  "OpsGenie"
+}
