@@ -22,7 +22,7 @@ if([String]::IsNullOrEmpty($ModulePrefix)){
 $CommonPrefix = $ModulePrefix
 #endregion
 
-Get-ChildItem -Path $CodeSourcePath -Filter "*.ps1" | ForEach-Object {
+Get-ChildItem -Path $CodeSourcePath -Filter "*.ps1" | Where-Object { $_.BaseName -ne 'test' } | ForEach-Object {
 
     Describe "Testing Code-file $($_.Name)" {
 

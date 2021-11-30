@@ -41,6 +41,7 @@
         .NOTES
             Date, Author, Version, Notes
             28.07.2021, Josua Burkard, 0.0.00001, initial creation
+            29.11.2021, Josua Burkard, 0.0.00003, added action AddAttachment
 
     #>
 
@@ -64,6 +65,7 @@
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
         [ValidateSet('acknowledge',
+                     'AddAttachment',
                      'AddNote',
                      'AddResponder',
                      'AddTags',
@@ -71,6 +73,7 @@
                      'assign',
                      'close',
                      'CustomAction',
+                     'description',
                      'escalate',
                      'priority',
                      'RemoveTags',
@@ -98,6 +101,15 @@
         $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('note', [string], $attributeCollection)
         $paramDictionary.Add('note', $Param)
 
+        if ($action -eq 'AddAttachment' ) {
+            $Attribute = New-Object System.Management.Automation.ParameterAttribute
+            $Attribute.Mandatory = $true
+            $Attribute.HelpMessage = "Path to the file to upload"
+            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
+            $attributeCollection.Add($Attribute)
+            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('FilePath', [string], $attributeCollection)
+            $paramDictionary.Add('FilePath', $Param)
+        }
         if ($action -eq "AddResponder") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
             $Attribute.Mandatory = $true
@@ -164,6 +176,15 @@
             $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('CustomAction', [string], $attributeCollection)
             $paramDictionary.Add('CustomAction', $Param)
         }
+        if ($action -eq "description") {
+            $Attribute = New-Object System.Management.Automation.ParameterAttribute
+            $Attribute.Mandatory = $true
+            $Attribute.HelpMessage = "Path to the file to upload"
+            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
+            $attributeCollection.Add($Attribute)
+            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('description', [string], $attributeCollection)
+            $paramDictionary.Add('description', $Param)
+        }
         if ($action -eq "escalate") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
             $Attribute.Mandatory = $true
@@ -207,7 +228,7 @@
                     APIKey = $APIKey
                     alias = $alias
                 }
-                if ( [boolean]$Proxy ) {
+                if ( [boolean]$EU ) {
                     $Params.Add('EU', $true )
                 }
                 if ( [boolean]$Proxy ) {
@@ -227,12 +248,18 @@
                 $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
             }
             $Methode = 'POST'
+            $ContentType = 'application/json'
             switch ( $action ) {
+                'AddAttachment' {
+                    $FilePath = $PSBoundParameters['FilePath']
+                    $newaction = 'attachments'
+                    $Methode = 'POST'
+                }
                 'AddNote' {
-                    $action = "notes"
+                    $newaction = "notes"
                 }
                 'AddResponder' {
-                    $action = 'responders'
+                    $newaction = 'responders'
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['responder'] ) {
                         $responder = @{
                             type = $PSBoundParameters['responderType']
@@ -255,11 +282,11 @@
 
                 }
                 'AddTags' {
-                    $action = "tags"
+                    $newaction = "tags"
                     $BodyParams.Add( 'tags' , $tags )
                 }
                 'AddTeam' {
-                    $action = 'teams'
+                    $newaction = 'teams'
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['team'] ) {
                         $team = @{
                             id = $PSBoundParameters['team']
@@ -273,6 +300,7 @@
                     $BodyParams.Add( 'team' , $team )
                 }
                 'assign' {
+                    $newaction = $action
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['owner'] ) {
                         $owner = @{
                             id = $PSBoundParameters['owner']
@@ -285,10 +313,18 @@
                     }
                     $BodyParams.Add( 'owner' , $owner )
                 }
+                'close' {
+                    $newaction = $action
+                }
                 'CustomAction' {
-                    $action = "actions/$( $PSBoundParameters['CustomAction'] )"
+                    $newaction = "actions/$( $PSBoundParameters['CustomAction'] )"
+                }
+                'description' {
+                    $newaction = $action
+                    $BodyParams.Add( 'description', $PSBoundParameters['description'] )
                 }
                 'escalate' {
+                    $newaction = $action
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['EscalationTarget'] ) {
                         $escalation = @{
                             id = $PSBoundParameters['EscalationTarget']
@@ -302,45 +338,80 @@
                     $BodyParams.Add( 'escalation' , $escalation )
                 }
                 'priority' {
+                    $newaction = $action
                     $BodyParams.Add( 'priority', $PSBoundParameters['priority'] )
                 }
                 'RemoveTags' {
-                    $action = "tags"
+                    $newaction = "tags"
                     $BodyParams.Add( 'tags' , $tags )
                     $Methode = 'DELETE'
                 }
                 'snooze' {
+                    $newaction = $action
                     $BodyParams.Add( 'endTime' , ( Get-Date ( Get-Date $PSBoundParameters['endTime'] ).ToUniversalTime() -UFormat '+%Y-%m-%dT%H:%M:%S.000Z' ) )
                 }
             }
-            $body = $BodyParams | ConvertTo-Json
-
+            if ( $newaction -ne 'attachments' ) {
+                $body = $BodyParams | ConvertTo-Json
+            }
 
             if ( [boolean]$EU ) {
-                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/$( $action )"
+                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
             }
             else {
-                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/$( $action )"
+                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
             }
 
-            $InvokeParams = @{
-                'Headers'     = @{
-                    "Authorization" = "GenieKey $APIKey"
+            if ( $newaction -ne 'attachments' ) {
+                $InvokeParams = @{
+                    'Headers'     = @{
+                        "Authorization" = "GenieKey $APIKey"
+                    }
+                    'Uri'         = $URI
+                    'ContentType' = $ContentType
+                    'Body'        = $body
+                    'Method'      = $Methode
                 }
-                'Uri'         = $URI
-                'ContentType' = 'application/json'
-                'Body'        = $body
-                'Method'      = $Methode
+                if ( [boolean]$Proxy ) {
+                    $InvokeParams.Add('Proxy', $Proxy )
+                }
+                if ( [boolean]$ProxyCredential ) {
+                    $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+                }
+
+                try {
+                    $request = Invoke-RestMethod @InvokeParams
+                    $ret = $request
+                }
+                catch {
+                    $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                    $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+                    $ErrResp
+                    $streamReader.Close()
+                    $err = $_.Exception
+                    $err.Message
+                    $err.Response
+                    $err.Status
+                }
             }
-            if ( [boolean]$Proxy ) {
-                $InvokeParams.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            else {
+                if ( [boolean]$Proxy ) {
+                    [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+                }
+                if ( [boolean]$ProxyCredential ) {
+                    [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+                }
+                Write-Verbose $URI
+                $httpClient = New-Object System.Net.Http.HttpClient
+                $arr = Get-Content $FilePath -Encoding Byte -ReadCount 0
+                $binaryContent = New-Object System.Net.Http.ByteArrayContent -ArgumentList @(,$arr)
+                $form = [System.Net.Http.MultipartFormDataContent]::new()
+                $form.Add( $binaryContent, "file", ( [System.IO.FileInfo]$FilePath ).Name )
+                $httpClient.DefaultRequestHeaders.Authorization = "GenieKey $APIKey"
+                $request = $httpClient.PostAsync( $URI, $form )
+                $ret = $request.Result
             }
 
-            $request = Invoke-RestMethod @InvokeParams
-            $ret = $request
             return $ret
         }
         catch {
