@@ -1,7 +1,453 @@
 ﻿<#
-    Generated at 07/28/2021 18:37:24 by Josh Burkard (josh@burkard.it)
+    Generated at 11/30/2021 11:46:59 by Josh Burkard (josh@burkard.it)
 #>
 #region namespace OpsGenie
+function Add-OpsGenieAlertAttachment {
+    <#
+        .SYNOPSIS
+            This function add an attachment to an existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function add an attachment to an existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is not mandatory but should be used, it will accept 512 chars
+
+        .PARAMETER note
+            Additional note that will be added while creating the alert.
+
+            this string parameter is not mandatory and accepts 25000 characters.
+
+        .PARAMETER source
+            Source field of the alert. Default value is IP address of the incoming request.
+
+            this string parameter is not mandatory and accepts 100 characters
+
+        .PARAMETER user
+            Display name of the request owner.
+
+            this string parameter is not mandatory and accepts 100 characters.
+
+        .EXAMPLE
+            Add-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -FilePath $FilePath
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$true)]
+        [string]$FilePath
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,100)][string]$source
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,100)][string]$user
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,25000)][string]$note
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( $alias ) {
+            $Params = @{
+                APIKey = $APIKey
+                alias = $alias
+            }
+            if ( [boolean]$EU ) {
+                $Params.Add('EU', $true )
+            }
+            if ( [boolean]$Proxy ) {
+                $Params.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $Params.Add('ProxyCredential', $ProxyCredential )
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments"
+        }
+
+        if ( [boolean]$Proxy ) {
+            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+        }
+        if ( [boolean]$ProxyCredential ) {
+            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        }
+        Write-Verbose $URI
+        $httpClient = New-Object System.Net.Http.HttpClient
+        $arr = Get-Content $FilePath -Encoding Byte -ReadCount 0
+        $binaryContent = New-Object System.Net.Http.ByteArrayContent -ArgumentList @(,$arr)
+        $form = [System.Net.Http.MultipartFormDataContent]::new()
+        $form.Add( $binaryContent, "file", ( [System.IO.FileInfo]$FilePath ).Name )
+        $httpClient.DefaultRequestHeaders.Authorization = "GenieKey $APIKey"
+        $request = $httpClient.PostAsync( $URI, $form )
+        $ret = $request.Result
+
+
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+}
+function Add-OpsGenieAlertNote {
+    <#
+        .SYNOPSIS
+            This function add a new note to an already existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function add a new note to an already existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is mandatory, it will accept 512 chars
+
+        .PARAMETER note
+            defines the new note
+
+            this string parameter is mandatory
+
+        .EXAMPLE
+            Add-OpsGenieAlertNote -APIKey $APIKey -EU -alias $Alias -note "this is a new note"
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.11.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$true)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [Parameter(Mandatory=$true)]
+        [string]$note
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$user
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$source
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( $alias ) {
+            $Params = @{
+                APIKey = $APIKey
+                alias = $alias
+            }
+            if ( [boolean]$EU ) {
+                $Params.Add('EU', $true )
+            }
+            if ( [boolean]$Proxy ) {
+                $Params.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $Params.Add('ProxyCredential', $ProxyCredential )
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/notes"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/notes"
+        }
+
+        if ( [boolean]$Proxy ) {
+            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+        }
+        if ( [boolean]$ProxyCredential ) {
+            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        }
+
+        $BodyParams = @{}
+        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
+            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        $body = $BodyParams | ConvertTo-Json
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            body = $body
+            ContentType   = 'application/json'
+            'Method'      = 'POST'
+        }
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+            $ret = $request
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $ErrResp
+            $streamReader.Close()
+            $err = $_.Exception
+            $err.Message
+            $err.Response
+            $err.Status
+        }
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+
+}
+function Close-OpsGenieAlert {
+    <#
+        .SYNOPSIS
+            This function acknowledge a existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function acknowledge a existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is not mandatory but should be used, it will accept 512 chars
+
+        .PARAMETER note
+            Additional note that will be added while creating the alert.
+
+            this string parameter is not mandatory and accepts 25000 characters.
+
+        .PARAMETER source
+            Source field of the alert. Default value is IP address of the incoming request.
+
+            this string parameter is not mandatory and accepts 100 characters
+
+        .PARAMETER user
+            Display name of the request owner.
+
+            this string parameter is not mandatory and accepts 100 characters.
+
+        .EXAMPLE
+            Close-OpsGenieAlert -APIKey $APIKey -EU -alias $Alias
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,100)][string]$source
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,100)][string]$user
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,25000)][string]$note
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/close?identifierType=alias"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )/close?identifierType=alias"
+        }
+
+        $BodyParams = @{}
+        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'Proxy', 'ProxyCredential', 'EU') } ) {
+            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        $body = $BodyParams | ConvertTo-Json
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'ContentType' = 'application/json'
+            'Body'        = $body
+            'Method'      = 'POST'
+        }
+        if ( [boolean]$Proxy ) {
+            $InvokeParams.Add('Proxy', $Proxy )
+        }
+        if ( [boolean]$ProxyCredential ) {
+            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+        }
+
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
+        $ret = $request.requestId
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+}
 function Get-OpsGenieAlert {
     <#
         .SYNOPSIS
@@ -85,7 +531,23 @@ function Get-OpsGenieAlert {
             $InvokeParams.Add('ProxyCredential', $ProxyCredential )
         }
 
-        $request = Invoke-RestMethod @InvokeParams
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
         $datas = $request.data
         if ( [boolean]$alias ) {
             $datas = $datas | Where-Object { $_.alias -eq $alias }
@@ -114,6 +576,282 @@ function Get-OpsGenieAlert {
         # throw with only the last error
         throw $ret
     }
+}
+function Get-OpsGenieAlertAttachment {
+    <#
+        .SYNOPSIS
+            This function receives all attachments from an existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function receives all attachments from an existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is mandatory, it will accept 512 chars
+
+        .EXAMPLE
+            Get-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$true)]
+        [ValidateLength(1,512)][string]$alias
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( $alias ) {
+            $Params = @{
+                APIKey = $APIKey
+                alias = $alias
+            }
+            if ( [boolean]$EU ) {
+                $Params.Add('EU', $true )
+            }
+            if ( [boolean]$Proxy ) {
+                $Params.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $Params.Add('ProxyCredential', $ProxyCredential )
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments/"
+        }
+
+        if ( [boolean]$Proxy ) {
+            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+        }
+        if ( [boolean]$ProxyCredential ) {
+            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        }
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'Method'      = 'GET'
+        }
+        try {
+            $res = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+        $ids = $res.data.id
+
+        $results = @()
+        # $id = @( $ids  )[0]
+        foreach ( $id in $ids ) {
+            $results += ( Invoke-RestMethod -Method Get -Uri "$( $URI )/$( $id )" -Headers $InvokeParams.Headers ).data | Select-Object @{ Name = 'id'; Expression = { $id } }, name, url
+        }
+        $ret = $results
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+
+}
+function Get-OpsGenieAlertNote {
+    <#
+        .SYNOPSIS
+            This function receives all notes from an existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function receives all notes from an existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is mandatory, it will accept 512 chars
+
+        .EXAMPLE
+            Get-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$true)]
+        [ValidateLength(1,512)][string]$alias
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( $alias ) {
+            $Params = @{
+                APIKey = $APIKey
+                alias = $alias
+            }
+            if ( [boolean]$EU ) {
+                $Params.Add('EU', $true )
+            }
+            if ( [boolean]$Proxy ) {
+                $Params.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $Params.Add('ProxyCredential', $ProxyCredential )
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/notes"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/notes"
+        }
+
+        if ( [boolean]$Proxy ) {
+            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+        }
+        if ( [boolean]$ProxyCredential ) {
+            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        }
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'Method'      = 'GET'
+        }
+        try {
+            $res = Invoke-RestMethod @InvokeParams
+            $ret = $res.data.id
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+
 }
 function Invoke-OpsGenieAlertAction {
     <#
@@ -158,6 +896,7 @@ function Invoke-OpsGenieAlertAction {
         .NOTES
             Date, Author, Version, Notes
             28.07.2021, Josua Burkard, 0.0.00001, initial creation
+            29.11.2021, Josua Burkard, 0.0.00003, added action AddAttachment
 
     #>
 
@@ -188,6 +927,7 @@ function Invoke-OpsGenieAlertAction {
                      'assign',
                      'close',
                      'CustomAction',
+                     'description',
                      'escalate',
                      'priority',
                      'RemoveTags',
@@ -281,6 +1021,15 @@ function Invoke-OpsGenieAlertAction {
             $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('CustomAction', [string], $attributeCollection)
             $paramDictionary.Add('CustomAction', $Param)
         }
+        if ($action -eq "description") {
+            $Attribute = New-Object System.Management.Automation.ParameterAttribute
+            $Attribute.Mandatory = $true
+            $Attribute.HelpMessage = "Path to the file to upload"
+            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
+            $attributeCollection.Add($Attribute)
+            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('description', [string], $attributeCollection)
+            $paramDictionary.Add('description', $Param)
+        }
         if ($action -eq "escalate") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
             $Attribute.Mandatory = $true
@@ -324,7 +1073,7 @@ function Invoke-OpsGenieAlertAction {
                     APIKey = $APIKey
                     alias = $alias
                 }
-                if ( [boolean]$Proxy ) {
+                if ( [boolean]$EU ) {
                     $Params.Add('EU', $true )
                 }
                 if ( [boolean]$Proxy ) {
@@ -344,12 +1093,13 @@ function Invoke-OpsGenieAlertAction {
                 $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
             }
             $Methode = 'POST'
+            $ContentType = 'application/json'
             switch ( $action ) {
                 'AddNote' {
-                    $action = "notes"
+                    $newaction = "notes"
                 }
                 'AddResponder' {
-                    $action = 'responders'
+                    $newaction = 'responders'
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['responder'] ) {
                         $responder = @{
                             type = $PSBoundParameters['responderType']
@@ -372,11 +1122,11 @@ function Invoke-OpsGenieAlertAction {
 
                 }
                 'AddTags' {
-                    $action = "tags"
+                    $newaction = "tags"
                     $BodyParams.Add( 'tags' , $tags )
                 }
                 'AddTeam' {
-                    $action = 'teams'
+                    $newaction = 'teams'
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['team'] ) {
                         $team = @{
                             id = $PSBoundParameters['team']
@@ -390,6 +1140,7 @@ function Invoke-OpsGenieAlertAction {
                     $BodyParams.Add( 'team' , $team )
                 }
                 'assign' {
+                    $newaction = $action
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['owner'] ) {
                         $owner = @{
                             id = $PSBoundParameters['owner']
@@ -402,10 +1153,18 @@ function Invoke-OpsGenieAlertAction {
                     }
                     $BodyParams.Add( 'owner' , $owner )
                 }
+                'close' {
+                    $newaction = $action
+                }
                 'CustomAction' {
-                    $action = "actions/$( $PSBoundParameters['CustomAction'] )"
+                    $newaction = "actions/$( $PSBoundParameters['CustomAction'] )"
+                }
+                'description' {
+                    $newaction = $action
+                    $BodyParams.Add( 'description', $PSBoundParameters['description'] )
                 }
                 'escalate' {
+                    $newaction = $action
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['EscalationTarget'] ) {
                         $escalation = @{
                             id = $PSBoundParameters['EscalationTarget']
@@ -419,25 +1178,28 @@ function Invoke-OpsGenieAlertAction {
                     $BodyParams.Add( 'escalation' , $escalation )
                 }
                 'priority' {
+                    $newaction = $action
                     $BodyParams.Add( 'priority', $PSBoundParameters['priority'] )
                 }
                 'RemoveTags' {
-                    $action = "tags"
+                    $newaction = "tags"
                     $BodyParams.Add( 'tags' , $tags )
                     $Methode = 'DELETE'
                 }
                 'snooze' {
+                    $newaction = $action
                     $BodyParams.Add( 'endTime' , ( Get-Date ( Get-Date $PSBoundParameters['endTime'] ).ToUniversalTime() -UFormat '+%Y-%m-%dT%H:%M:%S.000Z' ) )
                 }
             }
-            $body = $BodyParams | ConvertTo-Json
-
+            if ( $newaction -ne 'attachments' ) {
+                $body = $BodyParams | ConvertTo-Json
+            }
 
             if ( [boolean]$EU ) {
-                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/$( $action )"
+                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
             }
             else {
-                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/$( $action )"
+                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
             }
 
             $InvokeParams = @{
@@ -445,7 +1207,7 @@ function Invoke-OpsGenieAlertAction {
                     "Authorization" = "GenieKey $APIKey"
                 }
                 'Uri'         = $URI
-                'ContentType' = 'application/json'
+                'ContentType' = $ContentType
                 'Body'        = $body
                 'Method'      = $Methode
             }
@@ -456,8 +1218,21 @@ function Invoke-OpsGenieAlertAction {
                 $InvokeParams.Add('ProxyCredential', $ProxyCredential )
             }
 
-            $request = Invoke-RestMethod @InvokeParams
-            $ret = $request
+            try {
+                $request = Invoke-RestMethod @InvokeParams
+                $ret = $request
+            }
+            catch {
+                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+                $ErrResp
+                $streamReader.Close()
+                $err = $_.Exception
+                $err.Message
+                $err.Response
+                $err.Status
+            }
+
             return $ret
         }
         catch {
@@ -690,8 +1465,563 @@ function New-OpsGenieAlert {
             $InvokeParams.Add('ProxyCredential', $ProxyCredential )
         }
 
-        $request = Invoke-RestMethod @InvokeParams
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
         $ret = $request.requestId
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+}
+function Remove-OpsGenieAlert {
+    <#
+        .SYNOPSIS
+            This function acknowledge a existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function acknowledge a existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is not mandatory but should be used, it will accept 512 chars
+
+        .PARAMETER note
+            Additional note that will be added while creating the alert.
+
+            this string parameter is not mandatory and accepts 25000 characters.
+
+        .PARAMETER source
+            Source field of the alert. Default value is IP address of the incoming request.
+
+            this string parameter is not mandatory and accepts 100 characters
+
+        .PARAMETER user
+            Display name of the request owner.
+
+            this string parameter is not mandatory and accepts 100 characters.
+
+        .EXAMPLE
+            Remove-OpsGenieAlert -APIKey $APIKey -EU -alias $Alias
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )?identifierType=alias"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )?identifierType=alias"
+        }
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'ContentType' = 'application/json'
+            'Method'      = 'DELETE'
+        }
+        if ( [boolean]$Proxy ) {
+            $InvokeParams.Add('Proxy', $Proxy )
+        }
+        if ( [boolean]$ProxyCredential ) {
+            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+        }
+
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
+        $ret = $request.requestId
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+}
+function Remove-OpsGenieAlertAttachment {
+    <#
+        .SYNOPSIS
+            This function removes an attachment from an existing alert in OpsGenie
+
+        .DESCRIPTION
+            This function removes an attachments from an existing alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is mandatory, it will accept 512 chars
+
+        .PARAMETER attachmentId
+            Identifier of the attachment
+
+        .EXAMPLE
+            Get-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [Parameter(Mandatory=$true)]
+        [string]$attachmentId
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( $alias ) {
+            $Params = @{
+                APIKey = $APIKey
+                alias = $alias
+            }
+            if ( [boolean]$EU ) {
+                $Params.Add('EU', $true )
+            }
+            if ( [boolean]$Proxy ) {
+                $Params.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $Params.Add('ProxyCredential', $ProxyCredential )
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+        }
+
+        if ( [boolean]$Proxy ) {
+            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+        }
+        if ( [boolean]$ProxyCredential ) {
+            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        }
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'Method'      = 'DELETE'
+        }
+        try {
+            $ret = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+
+}
+function Set-OpsGenieAlertEscalation {
+    <#
+        .SYNOPSIS
+            This function creates a new alert in OpsGenie
+
+        .DESCRIPTION
+            This function creates a new alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is not mandatory but should be used, it will accept 512 chars
+
+        .PARAMETER priority
+            Priority level of the alert. Possible values are P1, P2, P3, P4 and P5.
+
+            this parameter is not mandatory. the Default value is P3.
+
+        .EXAMPLE
+            Set-OpsGenieAlertPriority -APIKey $APIKey -EU -alias $Alias -priority P4
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [parameter(Mandatory=$true,ParameterSetName="id")]
+        [string]$id
+        ,
+        [parameter(Mandatory=$true,ParameterSetName="name")]
+        [string]$name
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/escalate?identifierType=alias"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )/escalate?identifierType=alias"
+        }
+
+        $BodyParams = @{}
+        if ( [boolean]$id ) {
+            $BodyParams.Add( 'escalation' , @{ id = $id } )
+        }
+        if ( [boolean]$name ) {
+            $BodyParams.Add( 'escalation' , @{ name = $name } )
+        }
+        $body = $BodyParams | ConvertTo-Json
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'ContentType' = 'application/json'
+            'Body'        = $body
+            'Method'      = 'POST'
+        }
+        if ( [boolean]$Proxy ) {
+            $InvokeParams.Add('Proxy', $Proxy )
+        }
+        if ( [boolean]$ProxyCredential ) {
+            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+        }
+
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
+        $ret = $request.requestId
+        return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+}
+function Set-OpsGenieAlertPriority {
+    <#
+        .SYNOPSIS
+            This function creates a new alert in OpsGenie
+
+        .DESCRIPTION
+            This function creates a new alert in OpsGenie through the API v2
+
+            more info about the API under https://docs.opsgenie.com/docs/alert-api
+
+        .PARAMETER APIKey
+            The APIKey from OpsGenie
+
+        .PARAMETER EU
+            if this switch parameter is set, the function will connect to API URI in EU otherwise, the global URI
+
+        .PARAMETER Proxy
+            defines the proxy server to use
+
+        .PARAMETER ProxyCredential
+            defines the credential for the Proxy-Server
+
+        .PARAMETER alias
+            Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
+
+            this string parameter is not mandatory but should be used, it will accept 512 chars
+
+        .PARAMETER priority
+            Priority level of the alert. Possible values are P1, P2, P3, P4 and P5.
+
+            this parameter is not mandatory. the Default value is P3.
+
+        .EXAMPLE
+            Set-OpsGenieAlertPriority -APIKey $APIKey -EU -alias $Alias -priority P4
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true)]
+        [string]$APIKey
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$Proxy
+        ,
+        [Parameter(Mandatory=$false)]
+        [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateSet("P1","P2","P3","P4","P5")]
+        [string]$priority
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+        if ( [boolean]$EU ) {
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/priority?identifierType=alias"
+        }
+        else {
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )/priority?identifierType=alias"
+        }
+
+        $BodyParams = @{
+            priority = $priority
+        }
+        $body = $BodyParams | ConvertTo-Json
+
+        $InvokeParams = @{
+            'Headers'     = @{
+                "Authorization" = "GenieKey $APIKey"
+            }
+            'Uri'         = $URI
+            'ContentType' = 'application/json'
+            'Body'        = $body
+            'Method'      = 'POST'
+        }
+        if ( [boolean]$Proxy ) {
+            $InvokeParams.Add('Proxy', $Proxy )
+        }
+        if ( [boolean]$ProxyCredential ) {
+            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+        }
+
+        $request = Invoke-RestMethod @InvokeParams
+        try {
+            $ret = $request.requestId
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
         return $ret
     }
     catch {

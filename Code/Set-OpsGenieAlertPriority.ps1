@@ -91,7 +91,23 @@
         }
 
         $request = Invoke-RestMethod @InvokeParams
-        $ret = $request.requestId
+        try {
+            $ret = $request.requestId
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
         return $ret
     }
     catch {

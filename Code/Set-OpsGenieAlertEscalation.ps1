@@ -96,7 +96,23 @@
             $InvokeParams.Add('ProxyCredential', $ProxyCredential )
         }
 
-        $request = Invoke-RestMethod @InvokeParams
+        try {
+            $request = Invoke-RestMethod @InvokeParams
+        }
+        catch {
+            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $streamReader.Close()
+            $err = $_.Exception
+            $ret = @{
+                ErrResp = $ErrResp
+                Message = $err.Message
+                Response = $err.Response
+                Status = $err.Status
+            }
+            throw $ret
+        }
+
         $ret = $request.requestId
         return $ret
     }

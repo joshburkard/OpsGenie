@@ -65,7 +65,6 @@
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
         [ValidateSet('acknowledge',
-                     'AddAttachment',
                      'AddNote',
                      'AddResponder',
                      'AddTags',
@@ -101,15 +100,6 @@
         $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('note', [string], $attributeCollection)
         $paramDictionary.Add('note', $Param)
 
-        if ($action -eq 'AddAttachment' ) {
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            $Attribute.HelpMessage = "Path to the file to upload"
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('FilePath', [string], $attributeCollection)
-            $paramDictionary.Add('FilePath', $Param)
-        }
         if ($action -eq "AddResponder") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
             $Attribute.Mandatory = $true
@@ -250,11 +240,6 @@
             $Methode = 'POST'
             $ContentType = 'application/json'
             switch ( $action ) {
-                'AddAttachment' {
-                    $FilePath = $PSBoundParameters['FilePath']
-                    $newaction = 'attachments'
-                    $Methode = 'POST'
-                }
                 'AddNote' {
                     $newaction = "notes"
                 }
@@ -362,54 +347,35 @@
                 $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
             }
 
-            if ( $newaction -ne 'attachments' ) {
-                $InvokeParams = @{
-                    'Headers'     = @{
-                        "Authorization" = "GenieKey $APIKey"
-                    }
-                    'Uri'         = $URI
-                    'ContentType' = $ContentType
-                    'Body'        = $body
-                    'Method'      = $Methode
+            $InvokeParams = @{
+                'Headers'     = @{
+                    "Authorization" = "GenieKey $APIKey"
                 }
-                if ( [boolean]$Proxy ) {
-                    $InvokeParams.Add('Proxy', $Proxy )
-                }
-                if ( [boolean]$ProxyCredential ) {
-                    $InvokeParams.Add('ProxyCredential', $ProxyCredential )
-                }
-
-                try {
-                    $request = Invoke-RestMethod @InvokeParams
-                    $ret = $request
-                }
-                catch {
-                    $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-                    $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-                    $ErrResp
-                    $streamReader.Close()
-                    $err = $_.Exception
-                    $err.Message
-                    $err.Response
-                    $err.Status
-                }
+                'Uri'         = $URI
+                'ContentType' = $ContentType
+                'Body'        = $body
+                'Method'      = $Methode
             }
-            else {
-                if ( [boolean]$Proxy ) {
-                    [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
-                }
-                if ( [boolean]$ProxyCredential ) {
-                    [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
-                }
-                Write-Verbose $URI
-                $httpClient = New-Object System.Net.Http.HttpClient
-                $arr = Get-Content $FilePath -Encoding Byte -ReadCount 0
-                $binaryContent = New-Object System.Net.Http.ByteArrayContent -ArgumentList @(,$arr)
-                $form = [System.Net.Http.MultipartFormDataContent]::new()
-                $form.Add( $binaryContent, "file", ( [System.IO.FileInfo]$FilePath ).Name )
-                $httpClient.DefaultRequestHeaders.Authorization = "GenieKey $APIKey"
-                $request = $httpClient.PostAsync( $URI, $form )
-                $ret = $request.Result
+            if ( [boolean]$Proxy ) {
+                $InvokeParams.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            }
+
+            try {
+                $request = Invoke-RestMethod @InvokeParams
+                $ret = $request
+            }
+            catch {
+                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+                $ErrResp
+                $streamReader.Close()
+                $err = $_.Exception
+                $err.Message
+                $err.Response
+                $err.Status
             }
 
             return $ret

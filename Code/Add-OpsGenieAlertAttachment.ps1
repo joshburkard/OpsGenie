@@ -1,10 +1,10 @@
-﻿function Close-OpsGenieAlert {
+﻿function Add-OpsGenieAlertAttachment {
     <#
         .SYNOPSIS
-            This function acknowledge a existing alert in OpsGenie
+            This function add an attachment to an existing alert in OpsGenie
 
         .DESCRIPTION
-            This function acknowledge a existing alert in OpsGenie through the API v2
+            This function add an attachment to an existing alert in OpsGenie through the API v2
 
             more info about the API under https://docs.opsgenie.com/docs/alert-api
 
@@ -41,7 +41,7 @@
             this string parameter is not mandatory and accepts 100 characters.
 
         .EXAMPLE
-            Close-OpsGenieAlert -APIKey $APIKey -EU -alias $Alias
+            Add-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -FilePath $FilePath
 
         .NOTES
             Date, Author, Version, Notes
@@ -62,6 +62,9 @@
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
+        [Parameter(Mandatory=$true)]
+        [string]$FilePath
+        ,
         [Parameter(Mandatory=$false)]
         [ValidateLength(1,512)][string]$alias
         ,
@@ -77,53 +80,49 @@
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
+        if ( $alias ) {
+            $Params = @{
+                APIKey = $APIKey
+                alias = $alias
+            }
+            if ( [boolean]$EU ) {
+                $Params.Add('EU', $true )
+            }
+            if ( [boolean]$Proxy ) {
+                $Params.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $Params.Add('ProxyCredential', $ProxyCredential )
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
         if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/close?identifierType=alias"
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments"
         }
         else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )/close?identifierType=alias"
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments"
         }
 
-        $BodyParams = @{}
-        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'Proxy', 'ProxyCredential', 'EU') } ) {
-            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
-        }
-        $body = $BodyParams | ConvertTo-Json
-
-        $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
-            }
-            'Uri'         = $URI
-            'ContentType' = 'application/json'
-            'Body'        = $body
-            'Method'      = 'POST'
-        }
         if ( [boolean]$Proxy ) {
-            $InvokeParams.Add('Proxy', $Proxy )
+            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
         }
         if ( [boolean]$ProxyCredential ) {
-            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
         }
+        Write-Verbose $URI
+        $httpClient = New-Object System.Net.Http.HttpClient
+        $arr = Get-Content $FilePath -Encoding Byte -ReadCount 0
+        $binaryContent = New-Object System.Net.Http.ByteArrayContent -ArgumentList @(,$arr)
+        $form = [System.Net.Http.MultipartFormDataContent]::new()
+        $form.Add( $binaryContent, "file", ( [System.IO.FileInfo]$FilePath ).Name )
+        $httpClient.DefaultRequestHeaders.Authorization = "GenieKey $APIKey"
+        $request = $httpClient.PostAsync( $URI, $form )
+        $ret = $request.Result
 
-        try {
-            $request = Invoke-RestMethod @InvokeParams
-        }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $streamReader.Close()
-            $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
-        }
 
-        $ret = $request.requestId
         return $ret
     }
     catch {
