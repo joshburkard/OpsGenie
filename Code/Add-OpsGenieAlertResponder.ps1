@@ -1,10 +1,10 @@
-﻿function Remove-OpsGenieAlertAttachment {
+﻿function Add-OpsGenieAlertResponder {
     <#
         .SYNOPSIS
-            This function removes an attachment from an existing alert in OpsGenie
+            This function add a new responder to an already existing alert in OpsGenie
 
         .DESCRIPTION
-            This function removes an attachments from an existing alert in OpsGenie through the API v2
+            This function add a new responder to an already existing alert in OpsGenie through the API v2
 
             more info about the API under https://docs.opsgenie.com/docs/alert-api
 
@@ -25,15 +25,25 @@
 
             this string parameter is mandatory, it will accept 512 chars
 
-        .PARAMETER attachmentId
-            Identifier of the attachment
+        .PARAMETER ResponderType
+            the type of the responder, user or team
+
+            this string parameter is mandatory
+
+        .PARAMETER Responder
+            the name or id of the responder
+
+            this string parameter is mandatory
 
         .EXAMPLE
-            Remove-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -attachmentId $attachmentId
+            Add-OpsGenieAlertResponder -APIKey $APIKey -EU -alias $alias -responderType user -responder $UserMail
+
+        .EXAMPLE
+            Add-OpsGenieAlertResponder -APIKey $APIKey -EU -alias $alias -responderType team -responder $TeamName
 
         .NOTES
             Date, Author, Version, Notes
-            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+            28.11.2021, Josua Burkard, 0.0.00001, initial creation
 
     #>
 
@@ -54,7 +64,20 @@
         [ValidateLength(1,512)][string]$alias
         ,
         [Parameter(Mandatory=$true)]
-        [string]$attachmentId
+        [ValidateSet('user','team')]
+        [string]$responderType
+        ,
+        [Parameter(Mandatory=$true)]
+        [string]$responder
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$note
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$user
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$source
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
@@ -79,10 +102,10 @@
             }
         }
         if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/responders"
         }
         else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/responders"
         }
 
         if ( [boolean]$Proxy ) {
@@ -92,30 +115,64 @@
             [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
         }
 
+        $BodyParams = @{}
+        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
+            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        if ( $responderType -eq 'user' ) {
+            if ( Test-OpsGenieIsGuid -ObjectGuid $responder ) {
+                $responderobj = @{
+                    type = $responderType
+                    id = $responder
+                }
+            }
+            else {
+                $responderobj = @{
+                    type = $responderType
+                    username = $responder
+                }
+            }
+        }
+        else {
+            if ( Test-OpsGenieIsGuid -ObjectGuid $responder ) {
+                $responderobj = @{
+                    type = $responderType
+                    id = $responder
+                }
+            }
+            else {
+                $responderobj = @{
+                    type = $responderType
+                    name = $responder
+                }
+            }
+        }
+        $BodyParams.Add( 'responder' , $responderobj )
+        $body = $BodyParams | ConvertTo-Json
+
         $InvokeParams = @{
             'Headers'     = @{
                 "Authorization" = "GenieKey $APIKey"
             }
             'Uri'         = $URI
-            'Method'      = 'DELETE'
+            body = $body
+            ContentType   = 'application/json'
+            'Method'      = 'POST'
         }
         try {
-            $ret = Invoke-RestMethod @InvokeParams
+            $request = Invoke-RestMethod @InvokeParams
+            $ret = $request
         }
         catch {
             $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
             $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $ErrResp
             $streamReader.Close()
             $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
+            $err.Message
+            $err.Response
+            $err.Status
         }
-
         return $ret
     }
     catch {

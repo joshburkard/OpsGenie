@@ -187,8 +187,14 @@ function New-OpsGenieAlert {
         }
 
         $BodyParams = @{}
-        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'Proxy', 'ProxyCredential', 'EU') } ) {
+        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'Proxy', 'ProxyCredential', 'EU','alias') } ) {
             $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        if ( [boolean]$alias ) {
+            $BodyParams.Add('alias', $alias )
+        }
+        else {
+            $BodyParams.Add('alias', ( New-Guid ).Guid )
         }
         $body = $BodyParams | ConvertTo-Json
 
@@ -225,7 +231,7 @@ function New-OpsGenieAlert {
             throw $ret
         }
 
-        $ret = $request.requestId
+        $ret = $request.data
         return $ret
     }
     catch {

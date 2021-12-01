@@ -62,7 +62,7 @@
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$true)]
         [ValidateLength(1,512)][string]$alias
     )
     $function = $($MyInvocation.MyCommand.Name)

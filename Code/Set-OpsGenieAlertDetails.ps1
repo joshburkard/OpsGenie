@@ -1,10 +1,10 @@
-﻿function Remove-OpsGenieAlertAttachment {
+﻿function Set-OpsGenieAlertDetails {
     <#
         .SYNOPSIS
-            This function removes an attachment from an existing alert in OpsGenie
+            This function add additional details (custom propwerties) to an already existing alert in OpsGenie
 
         .DESCRIPTION
-            This function removes an attachments from an existing alert in OpsGenie through the API v2
+            This function add additional details (custom propwerties) to an already existing alert in OpsGenie through the API v2
 
             more info about the API under https://docs.opsgenie.com/docs/alert-api
 
@@ -25,36 +25,59 @@
 
             this string parameter is mandatory, it will accept 512 chars
 
-        .PARAMETER attachmentId
-            Identifier of the attachment
+        .PARAMETER details
+            defines the new details as hash table
+
+            this hashtable parameter is mandatory
 
         .EXAMPLE
-            Remove-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -attachmentId $attachmentId
+            Add-OpsGenieAlertDetails -APIKey $APIKey -EU -alias $alias -details @{ 'Test-1' = 'this is a first test property'; 'Test-2' = 'this is a second test property'}
 
         .NOTES
             Date, Author, Version, Notes
-            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+            28.11.2021, Josua Burkard, 0.0.00001, initial creation
 
     #>
 
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$true,ParameterSetName="byID")]
         [string]$APIKey
         ,
+        [Parameter(Mandatory=$true,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$true,ParameterSetName="byID")]
         [switch]$EU
         ,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$false,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$false,ParameterSetName="byID")]
         [string]$Proxy
         ,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory=$false,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$false,ParameterSetName="byID")]
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$true,ParameterSetName="byAlias")]
         [ValidateLength(1,512)][string]$alias
         ,
-        [Parameter(Mandatory=$true)]
-        [string]$attachmentId
+        [Parameter(Mandatory=$true,ParameterSetName="byID")]
+        [string]$identifier
+        ,
+        [Parameter(Mandatory=$true,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$true,ParameterSetName="byID")]
+        [hashtable]$details
+        ,
+        [Parameter(Mandatory=$false,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$false,ParameterSetName="byID")]
+        [string]$note
+        ,
+        [Parameter(Mandatory=$false,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$false,ParameterSetName="byID")]
+        [string]$user
+        ,
+        [Parameter(Mandatory=$false,ParameterSetName="byAlias")]
+        [Parameter(Mandatory=$false,ParameterSetName="byID")]
+        [string]$source
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
@@ -79,10 +102,10 @@
             }
         }
         if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/details"
         }
         else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/details"
         }
 
         if ( [boolean]$Proxy ) {
@@ -92,30 +115,36 @@
             [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
         }
 
+        $BodyParams = @{}
+        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
+            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        $BodyParams.Add('details', $details )
+        $body = $BodyParams | ConvertTo-Json
+
         $InvokeParams = @{
             'Headers'     = @{
                 "Authorization" = "GenieKey $APIKey"
             }
             'Uri'         = $URI
-            'Method'      = 'DELETE'
+            body = $body
+            ContentType   = 'application/json'
+            'Method'      = 'POST'
         }
         try {
-            $ret = Invoke-RestMethod @InvokeParams
+            $request = Invoke-RestMethod @InvokeParams
+            $ret = $request
         }
         catch {
             $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
             $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $ErrResp
             $streamReader.Close()
             $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
+            $err.Message
+            $err.Response
+            $err.Status
         }
-
         return $ret
     }
     catch {

@@ -6,11 +6,20 @@
 - [Description](#description)
 - [Global parameter](#global-parameters)
 - [Functions](#functions)
+  - [Add-OpsGenieAlertAttachment](#Add-OpsGenieAlertAttachment)
+  - [Add-OpsGenieAlertNote](#Add-OpsGenieAlertNote)
+  - [Add-OpsGenieAlertResponder](#Add-OpsGenieAlertResponder)
+  - [Add-OpsGenieAlertTag](#Add-OpsGenieAlertTag)
+  - [Add-OpsGenieAlertTeam](#Add-OpsGenieAlertTeam)
   - [Close-OpsGenieAlert](#close-opsgeniealert)
   - [Get-OpsGenieAlert](#get-opsgeniealert)
   - [New-OpsGenieAlert](#new-opsgeniealert)
   - [Invoke-OpsGenieAlertAction](#get-opsgeniealertaction)
   - [Remove-OpsGenieAlert](#remove-opsgeniealert)
+  - [Remove-OpsGenieAlertAttachment](#remove-opsgeniealertattachment)
+  - [Remove-OpsGenieAlertTag](#remove-opsgeniealerttag)
+  - [Set-OpsGenieAlertEscalation](#Set-OpsGenieAlertEscalation)
+  - [Set-OpsGenieAlertPriority](#Set-OpsGenieAlertPriority)
 - [Prerequisites](#prerequisites)
 - [Examples](#examples)
   - [create a new alert](#create-a-new-alert)
@@ -36,6 +45,73 @@ ProxyCredential | false | PSCredential | Credentials for the proxy server, only 
 
 ## Functions
 
+### Add-OpsGenieAlertAttachment
+
+this function add an attachment to an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+FilePath| true | string | the path to the file to attach|
+
+### Add-OpsGenieAlertNote
+
+this function add a note to an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+note| true | string | the note text to add | 25000 chars
+user | false | string | Display name of the request owner. | | 100 chars
+source | false | string | Display name of the request source. | | 100 chars
+
+### Add-OpsGenieAlertResponder
+
+this function add a responder to an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+respondertype| true | string | user or team |
+responder | true | string | id or name of the user or team to add |
+note | false | string | Additional alert note to add. | | 25000 chars
+user | false | string | Display name of the request owner. | | 100 chars
+source | false | string | Display name of the request source. | | 100 chars
+
+### Add-OpsGenieAlertTag
+
+this function add a tag to an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+tag | true | string | the tag to add |
+note | false | string | Additional alert note to add. | | 25000 chars
+user | false | string | Display name of the request owner. | | 100 chars
+source | false | string | Display name of the request source. | | 100 chars
+
+### Add-OpsGenieAlertTeam
+
+this function add a team to an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+team | true | string | the name or id of the team |
+note | false | string | Additional alert note to add. | | 25000 chars
+user | false | string | Display name of the request owner. | | 100 chars
+source | false | string | Display name of the request source. | | 100 chars
+
 ### Close-OpsGenieAlert
 
 this function close an existing alerts
@@ -45,6 +121,9 @@ possible params are:
 parameter | mandatory | type | description | limit
 ---|---|---|---|---
 alias | false | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+note | false | string | Additional alert note to add. | | 25000 chars
+user | false | string | Display name of the request owner. | | 100 chars
+source | false | string | Display name of the request source. | | 100 chars
 
 ### Get-OpsGenieAlert
 
@@ -58,6 +137,62 @@ parameter | mandatory | type | description | limit
 ---|---|---|---|---
 alias | false | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
 identifier | false | string | Identifier of the alert |
+
+### Get-OpsGenieAlertAttachment
+
+this function lists all attachements of an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+
+### Get-OpsGenieAlertNote
+
+this function lists all notes of an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+
+### Invoke-OpsGenieAlertAction
+
+this function invokes actions on an alert.
+
+possible values for the parameter **action** are:
+
+- acknowledge
+- assign
+- close
+- CustomAction
+- snooze
+- unacknowledge
+
+every action accepts this parameters:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+action | true | string |
+note | false | string | Additional alert note to add. | | 25000 chars
+user | false | string | Display name of the request owner. | | 100 chars
+source | false | string | Display name of the request source. | | 100 chars
+
+some of this actions need additional parameters:
+
+#### assign
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+owner | true | string | User that the alert will be assigned to. Either id or username of the user should be provided. |
+
+#### CustomAction
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+CustomAction | true | string | The name of the custom action to execute | |
 
 ### New-OpsGenieAlert
 
@@ -81,84 +216,6 @@ priority | false | string | Priority level of the alert. Possible values are P1,
 user | false | string | Display name of the request owner. | 100 chars
 note | false | string | Additional note that will be added while creating the alert. | 25000 chars
 
-### Invoke-OpsGenieAlertAction
-
-this function invokes actions on an alert.
-
-possible values for the parameter **action** are:
-
-- acknowledge
-- AddNote
-- AddResponder
-- AddTeam
-- AddTags
-- assign
-- close
-- CustomAction
-- escalate
-- priority
-- RemoveTags
-- snooze
-- unacknowledge
-
-every action accepts this parameters:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-note | false | string | Additional alert note to add. | | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-some of this actions need additional parameters:
-
-#### AddNote
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-note | true | string | Additional alert note to add. | | 25000 chars
-
-#### AddTeam
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-team | true | string | Team to route the alert. Either id or name of the team should be provided.
-
-#### AddResponder
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-responderType | true | string | type of responder: team or user |
-responder | true | string | Team or user that the alert will be routed to. name or id allowed |
-
-#### AddTags
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-tags | true | stringarray | List of tags to add into alert. | 20x50 chars
-
-#### assign
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-owner | true | string | User that the alert will be assigned to. Either id or username of the user should be provided. |
-
-#### CustomAction
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-CustomAction | true | string | The name of the custom action to execute | |
-
-#### priority
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-priority | true | string | P1, P2, P3, P4 or P5 |
-
-#### RemoveTags
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-tags | true | stringarray | List of tags to remove from alert. | 20x50 chars
 
 ### Remove-OpsGenieAlert
 
@@ -168,7 +225,29 @@ possible params are:
 
 parameter | mandatory | type | description | limit
 ---|---|---|---|---
-alias | false | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+
+### Remove-OpsGenieAlertAttachment
+
+this function removes an attachment from an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+attachmentId | true | string | the id of the attachment | 20 x 50 chars
+
+### Remove-OpsGenieAlertTag
+
+this function removes an existing alerts
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+tags | true | string array | tags to remove | 20 x 50 chars
 
 ## Prerequisites
 

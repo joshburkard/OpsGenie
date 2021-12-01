@@ -1,10 +1,10 @@
-﻿function Remove-OpsGenieAlertAttachment {
+﻿function Remove-OpsGenieAlertTag {
     <#
         .SYNOPSIS
-            This function removes an attachment from an existing alert in OpsGenie
+            This function remove a tag to an already existing alert in OpsGenie
 
         .DESCRIPTION
-            This function removes an attachments from an existing alert in OpsGenie through the API v2
+            This function remove a tag to an already existing alert in OpsGenie through the API v2
 
             more info about the API under https://docs.opsgenie.com/docs/alert-api
 
@@ -25,15 +25,17 @@
 
             this string parameter is mandatory, it will accept 512 chars
 
-        .PARAMETER attachmentId
-            Identifier of the attachment
+        .PARAMETER tags
+            List of tags to add into alert.
+
+            this string array parameter is mandatory
 
         .EXAMPLE
-            Remove-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -attachmentId $attachmentId
+            Remove-OpsGenieAlertTag -APIKey $APIKey -EU -alias $alias -tags 'Test-01'
 
         .NOTES
             Date, Author, Version, Notes
-            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+            28.11.2021, Josua Burkard, 0.0.00001, initial creation
 
     #>
 
@@ -54,7 +56,16 @@
         [ValidateLength(1,512)][string]$alias
         ,
         [Parameter(Mandatory=$true)]
-        [string]$attachmentId
+        [string[]]$tags
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$note
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$user
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$source
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
@@ -79,10 +90,10 @@
             }
         }
         if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/tags"
         }
         else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments/$( $attachmentId )"
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/tags"
         }
 
         if ( [boolean]$Proxy ) {
@@ -92,30 +103,37 @@
             [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
         }
 
+        $BodyParams = @{}
+        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
+            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        $BodyParams.Add('tags', $tags)
+        $body = $BodyParams | ConvertTo-Json
+        Write-Verbose $body
+
         $InvokeParams = @{
             'Headers'     = @{
                 "Authorization" = "GenieKey $APIKey"
             }
             'Uri'         = $URI
+            body          = $body
+            ContentType   = 'application/json'
             'Method'      = 'DELETE'
         }
         try {
-            $ret = Invoke-RestMethod @InvokeParams
+            $request = Invoke-RestMethod @InvokeParams
+            $ret = $request
         }
         catch {
             $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
             $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+            $ErrResp
             $streamReader.Close()
             $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
+            $err.Message
+            $err.Response
+            $err.Status
         }
-
         return $ret
     }
     catch {

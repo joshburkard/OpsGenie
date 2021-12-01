@@ -29,7 +29,13 @@
             defines the credential for the Proxy-Server
 
         .EXAMPLE
-            Get-SomeSettings.ps1 -Param1 'run'
+            $alert = Get-OpsGenieAlert -APIKey $APIKey -EU -alias $alias
+
+        .EXAMPLE
+            $alert = Get-OpsGenieAlert -APIKey $APIKey -EU -identifier $identifier
+
+        .EXAMPLE
+            $alerts = Get-OpsGenieAlert -APIKey $APIKey -EU
 
         .NOTES
             Date, Author, Version, Notes
@@ -43,67 +49,113 @@
         [string]$APIKey
         ,
         [Parameter(Mandatory=$false)]
-        [ValidateLength(1,512)][string]$alias
-        ,
-        [Parameter(Mandatory=$false)]
-        [string]$identifier
-        ,
-        [switch]$EU
-        ,
-        [Parameter(Mandatory=$false)]
         [string]$Proxy
         ,
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [switch]$EU
+        ,
+        [Parameter(Mandatory=$false)]
+        [ValidateLength(1,512)][string]$alias
+        ,
+        [Parameter(Mandatory=$false)]
+        [string]$identifier
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts"
-        }
-        else {
-            $URI = "https://api.opsgenie.com/v2/alerts"
-        }
-
-        $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
+        if ( -not [boolean]$identifier ) {
+            if ( [boolean]$EU ) {
+                $URI = "https://api.eu.opsgenie.com/v2/alerts"
             }
-            'Uri'         = $URI
-            'ContentType' = 'application/json'
-            'Method'      = 'GET'
-        }
-        if ( [boolean]$Proxy ) {
-            $InvokeParams.Add('Proxy', $Proxy )
-        }
-        if ( [boolean]$ProxyCredential ) {
-            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
-        }
-
-        try {
-            $request = Invoke-RestMethod @InvokeParams
-        }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $streamReader.Close()
-            $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
+            else {
+                $URI = "https://api.opsgenie.com/v2/alerts"
             }
-            throw $ret
-        }
 
-        $datas = $request.data
-        if ( [boolean]$alias ) {
-            $datas = $datas | Where-Object { $_.alias -eq $alias }
+            $InvokeParams = @{
+                'Headers'     = @{
+                    "Authorization" = "GenieKey $APIKey"
+                }
+                'Uri'         = $URI
+                'ContentType' = 'application/json'
+                'Method'      = 'GET'
+            }
+
+            if ( [boolean]$Proxy ) {
+                $InvokeParams.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            }
+
+            try {
+                $request = Invoke-RestMethod @InvokeParams
+            }
+            catch {
+                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+                $streamReader.Close()
+                $err = $_.Exception
+                $ret = @{
+                    ErrResp = $ErrResp
+                    Message = $err.Message
+                    Response = $err.Response
+                    Status = $err.Status
+                }
+                throw $ret
+            }
+
+            $datas = $request.data
+            if ( [boolean]$alias ) {
+                $datas = $datas | Where-Object { $_.alias -eq $alias }
+                $identifier = $datas.id
+            }
+            else {
+                $identifier = $null
+            }
         }
-        elseif ( [boolean]$identifier ) {
-            $datas = $datas | Where-Object { $_.id -eq $identifier }
+        if ( [boolean]$identifier ) {
+            if ( [boolean]$EU ) {
+                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )"
+            }
+            else {
+                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )"
+            }
+
+            $InvokeParams = @{
+                'Headers'     = @{
+                    "Authorization" = "GenieKey $APIKey"
+                }
+                'Uri'         = $URI
+                'ContentType' = 'application/json'
+                'Method'      = 'GET'
+            }
+
+            if ( [boolean]$Proxy ) {
+                $InvokeParams.Add('Proxy', $Proxy )
+            }
+            if ( [boolean]$ProxyCredential ) {
+                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            }
+
+            try {
+                $request = Invoke-RestMethod @InvokeParams
+            }
+            catch {
+                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+                $streamReader.Close()
+                $err = $_.Exception
+                $ret = @{
+                    ErrResp = $ErrResp
+                    Message = $err.Message
+                    Response = $err.Response
+                    Status = $err.Status
+                }
+                throw $ret
+            }
+            $datas = $request.data
         }
         $ret = $datas
         return $ret

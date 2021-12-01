@@ -23,22 +23,12 @@
         .PARAMETER alias
             Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.
 
-            this string parameter is not mandatory but should be used, it will accept 512 chars
+            this string parameter not mandatory, it will accept 512 chars
 
-        .PARAMETER note
-            Additional note that will be added while creating the alert.
+        .PARAMETER FilePath
+            the path to the file to attache
 
-            this string parameter is not mandatory and accepts 25000 characters.
-
-        .PARAMETER source
-            Source field of the alert. Default value is IP address of the incoming request.
-
-            this string parameter is not mandatory and accepts 100 characters
-
-        .PARAMETER user
-            Display name of the request owner.
-
-            this string parameter is not mandatory and accepts 100 characters.
+            this string parameter is mandatory
 
         .EXAMPLE
             Add-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -FilePath $FilePath
@@ -67,15 +57,6 @@
         ,
         [Parameter(Mandatory=$false)]
         [ValidateLength(1,512)][string]$alias
-        ,
-        [Parameter(Mandatory=$false)]
-        [ValidateLength(1,100)][string]$source
-        ,
-        [Parameter(Mandatory=$false)]
-        [ValidateLength(1,100)][string]$user
-        ,
-        [Parameter(Mandatory=$false)]
-        [ValidateLength(1,25000)][string]$note
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
@@ -121,7 +102,6 @@
         $httpClient.DefaultRequestHeaders.Authorization = "GenieKey $APIKey"
         $request = $httpClient.PostAsync( $URI, $form )
         $ret = $request.Result
-
 
         return $ret
     }

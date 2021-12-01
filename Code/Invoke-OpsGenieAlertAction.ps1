@@ -41,7 +41,7 @@
         .NOTES
             Date, Author, Version, Notes
             28.07.2021, Josua Burkard, 0.0.00001, initial creation
-            29.11.2021, Josua Burkard, 0.0.00003, added action AddAttachment
+            29.11.2021, Josua Burkard, 0.0.00003, removed actions which are now in separate functions
 
     #>
 
@@ -64,90 +64,35 @@
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
+        [Parameter(Mandatory=$true)]
         [ValidateSet('acknowledge',
-                     'AddNote',
-                     'AddResponder',
-                     'AddTags',
-                     'AddTeam',
                      'assign',
-                     'close',
                      'CustomAction',
                      'description',
-                     'escalate',
-                     'priority',
-                     'RemoveTags',
                      'snooze',
                      'unacknowledge')]
         [string]$action
         ,
+        [Parameter(Mandatory=$false)]
+        [string]$note
+        ,
+        [Parameter(Mandatory=$false)]
         [string]$user
         ,
+        [Parameter(Mandatory=$false)]
         [string]$source
     )
     DynamicParam {
         $paramDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
 
         $Attribute = New-Object System.Management.Automation.ParameterAttribute
-        if ($action -eq "AddNote") {
-            $Attribute.Mandatory = $true
-        }
-        else {
-            $Attribute.Mandatory = $false
-        }
+        $Attribute.Mandatory = $false
         $Attribute.HelpMessage = "Additional alert note to add."
         $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
         $attributeCollection.Add($Attribute)
         $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('note', [string], $attributeCollection)
         $paramDictionary.Add('note', $Param)
 
-        if ($action -eq "AddResponder") {
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            $Attribute.HelpMessage = "type of responder, team or user"
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $arrSet = @( 'team', 'user')
-            $ValidateSetAttribute = New-Object System.Management.Automation.ValidateSetAttribute($arrSet)
-            $attributeCollection.Add($ValidateSetAttribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('responderType', [string], $attributeCollection)
-            $paramDictionary.Add('responderType', $Param)
-
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            $Attribute.HelpMessage = "Team or user that the alert will be routed to."
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('responder', [string], $attributeCollection)
-            $paramDictionary.Add('responder', $Param)
-
-        }
-        if ($action -eq "AddTeam") {
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            $Attribute.HelpMessage = "Team to route the alert. Either id or name of the team should be provided. You can refer below for example values."
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('team', [string], $attributeCollection)
-            $paramDictionary.Add('team', $Param)
-        }
-        if ($action -in @( 'AddTags', 'RemoveTags') ) {
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            if ( $action -eq 'AddTags' ) {
-                $Attribute.HelpMessage = "List of tags to add into alert."
-            }
-            else {
-                $Attribute.HelpMessage = "List of tags to remove from alert."
-            }
-            $ValidateLengthAttribute = New-Object System.Management.Automation.ValidateLengthAttribute(1,50)
-            $ValidateCountAttribute = New-Object System.Management.Automation.ValidateCountAttribute(1,10)
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $attributeCollection.Add($ValidateLengthAttribute)
-            $attributeCollection.Add($ValidateCountAttribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('tags', [string[]], $attributeCollection)
-            $paramDictionary.Add('tags', $Param)
-        }
         if ($action -eq "assign") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
             $Attribute.Mandatory = $true
@@ -174,27 +119,6 @@
             $attributeCollection.Add($Attribute)
             $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('description', [string], $attributeCollection)
             $paramDictionary.Add('description', $Param)
-        }
-        if ($action -eq "escalate") {
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            $Attribute.HelpMessage = "Escalation that the alert will be escalated. Either id or name of the escalation should be provided."
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('EscalationTarget', [string], $attributeCollection)
-            $paramDictionary.Add('EscalationTarget', $Param)
-        }
-        if ($action -eq "priority") {
-            $Attribute = New-Object System.Management.Automation.ParameterAttribute
-            $Attribute.Mandatory = $true
-            $Attribute.HelpMessage = "Enter the End Date Time"
-            $arrSet = @( 'P1', 'P2', 'P3', 'P4', 'P5')
-            $ValidateSetAttribute = New-Object System.Management.Automation.ValidateSetAttribute($arrSet)
-            $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-            $attributeCollection.Add($Attribute)
-            $attributeCollection.Add($ValidateSetAttribute)
-            $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('priority', [string], $attributeCollection)
-            $paramDictionary.Add('priority', $Param)
         }
         if ($action -eq "snooze") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
@@ -240,50 +164,6 @@
             $Methode = 'POST'
             $ContentType = 'application/json'
             switch ( $action ) {
-                'AddNote' {
-                    $newaction = "notes"
-                }
-                'AddResponder' {
-                    $newaction = 'responders'
-                    if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['responder'] ) {
-                        $responder = @{
-                            type = $PSBoundParameters['responderType']
-                            id = $PSBoundParameters['responder']
-                        }
-                    }
-                    elseif ( $PSBoundParameters['responderType'] -eq 'user' ) {
-                        $responder = @{
-                            type = $PSBoundParameters['responderType']
-                            user = $PSBoundParameters['responder']
-                        }
-                    }
-                    else {
-                        $responder = @{
-                            type = $PSBoundParameters['responderType']
-                            team = $PSBoundParameters['responder']
-                        }
-                    }
-                    $BodyParams.Add( 'responder' , $responder )
-
-                }
-                'AddTags' {
-                    $newaction = "tags"
-                    $BodyParams.Add( 'tags' , $tags )
-                }
-                'AddTeam' {
-                    $newaction = 'teams'
-                    if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['team'] ) {
-                        $team = @{
-                            id = $PSBoundParameters['team']
-                        }
-                    }
-                    else {
-                        $team = @{
-                            name = $PSBoundParameters['team']
-                        }
-                    }
-                    $BodyParams.Add( 'team' , $team )
-                }
                 'assign' {
                     $newaction = $action
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['owner'] ) {
@@ -298,38 +178,12 @@
                     }
                     $BodyParams.Add( 'owner' , $owner )
                 }
-                'close' {
-                    $newaction = $action
-                }
                 'CustomAction' {
                     $newaction = "actions/$( $PSBoundParameters['CustomAction'] )"
                 }
                 'description' {
                     $newaction = $action
                     $BodyParams.Add( 'description', $PSBoundParameters['description'] )
-                }
-                'escalate' {
-                    $newaction = $action
-                    if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['EscalationTarget'] ) {
-                        $escalation = @{
-                            id = $PSBoundParameters['EscalationTarget']
-                        }
-                    }
-                    else {
-                        $escalation = @{
-                            username = $PSBoundParameters['EscalationTarget']
-                        }
-                    }
-                    $BodyParams.Add( 'escalation' , $escalation )
-                }
-                'priority' {
-                    $newaction = $action
-                    $BodyParams.Add( 'priority', $PSBoundParameters['priority'] )
-                }
-                'RemoveTags' {
-                    $newaction = "tags"
-                    $BodyParams.Add( 'tags' , $tags )
-                    $Methode = 'DELETE'
                 }
                 'snooze' {
                     $newaction = $action
