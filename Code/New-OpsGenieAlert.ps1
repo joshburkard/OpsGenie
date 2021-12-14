@@ -114,8 +114,23 @@ function New-OpsGenieAlert {
         .PARAMETER ProxyCredential
             defines the credential for the Proxy-Server
 
+        .PARAMETER wait
+            if this switch parameter is used, the function will wait till the alert is created
+
         .EXAMPLE
-            Get-SomeSettings.ps1 -Param1 'run'
+            $AlertParams = @{
+                APIKey      = $APIKey
+                EU          = $EU
+                alias = $alias
+                message     = "This is a test message"
+                priority    = 'P4'
+                source      = "script $( $CurrentFile.Name )"
+                description = @"
+                    This is a Test
+                    this is the second line
+                "@
+            }
+            New-OpsGenieAlert @AlertParams -wait
 
         .NOTES
             Date, Author, Version, Notes
@@ -131,7 +146,7 @@ function New-OpsGenieAlert {
         [Parameter(Mandatory=$true)]
         [ValidateLength(1,130)][string]$message
         ,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [ValidateCount(1,50)][Array]$responders
         ,
         [Parameter(Mandatory=$false)]
@@ -175,6 +190,8 @@ function New-OpsGenieAlert {
         ,
         [Parameter(Mandatory=$false)]
         [System.Management.Automation.PSCredential]$ProxyCredential
+        ,
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
@@ -190,12 +207,10 @@ function New-OpsGenieAlert {
         foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'Proxy', 'ProxyCredential', 'EU','alias') } ) {
             $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
-        if ( [boolean]$alias ) {
-            $BodyParams.Add('alias', $alias )
+        if ( -not [boolean]$alias ) {
+            $alias = ( New-Guid ).Guid
         }
-        else {
-            $BodyParams.Add('alias', ( New-Guid ).Guid )
-        }
+        $BodyParams.Add('alias', $alias )
         $body = $BodyParams | ConvertTo-Json
 
         $InvokeParams = @{
@@ -231,6 +246,19 @@ function New-OpsGenieAlert {
             throw $ret
         }
 
+        if ( [boolean]$wait ) {
+            $AlertStartTime = Get-Date
+            $alert = Get-OpsGenieAlert -APIKey $APIKey -EU -alias $alias
+            do {
+                $alert = Get-OpsGenieAlert -APIKey $APIKey -EU -alias $alias
+                if ( -not [boolean]$alert ) {
+                    Start-Sleep -Seconds 1
+                }
+            } until ( ( [boolean]$alert ) -or ( ( Get-Date ) -gt $AlertStartTime.AddMinutes(5) ))
+            if ( -not [boolean]$alert ) {
+                throw "alert not created after 5 minutes"
+            }
+        }
         $ret = $request.data
         return $ret
     }
