@@ -69,7 +69,7 @@ you can start with this simple examples. other examples are under each function 
 
 ### define the connection to OpsGenie
 
-yoy can define a HashTable with the connection parameters
+you can define a HashTable with the connection parameters
 
 ```PowerShell
 $OpsGenieConnection = @{
