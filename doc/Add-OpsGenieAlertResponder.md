@@ -32,3 +32,7 @@ this examples set a team as a responder:
 ```PowerShell
 Add-OpsGenieAlertResponder -APIKey $APIKey -EU -alias $alias -responderType team -responder $TeamName
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#add-responder-to-alert](https://docs.opsgenie.com/docs/alert-api#add-responder-to-alert)

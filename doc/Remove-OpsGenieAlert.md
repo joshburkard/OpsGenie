@@ -19,3 +19,7 @@ alias | true | string | Client-defined identifier of the alert, that is also the
 ```PowerShell
 Remove-OpsGenieAlert -APIKey $APIKey -EU -alias $Alias
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#delete-alert](https://docs.opsgenie.com/docs/alert-api#delete-alert)

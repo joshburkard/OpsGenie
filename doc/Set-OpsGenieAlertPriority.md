@@ -20,3 +20,7 @@ priority | true | string | one of this values: P1, P2, P3, P4, P5 |
 ```PowerShell
 Set-OpsGenieAlertPriority -APIKey $APIKey -EU -alias $Alias -priority P4
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api-continued#update-alert-priority](https://docs.opsgenie.com/docs/alert-api-continued#update-alert-priority)

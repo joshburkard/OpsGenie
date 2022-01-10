@@ -42,3 +42,6 @@ CustomAction | true | string | The name of the custom action to execute | |
 
 ## Example
 
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#execute-custom-action](https://docs.opsgenie.com/docs/alert-api#execute-custom-action)

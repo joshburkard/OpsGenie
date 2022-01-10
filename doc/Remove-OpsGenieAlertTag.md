@@ -20,3 +20,7 @@ tags | true | string array | tags to remove | 20 x 50 chars
 ```PowerShell
 Remove-OpsGenieAlertTag -APIKey $APIKey -EU -alias $alias -tags 'Test-01'
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#remove-tags-from-alert](https://docs.opsgenie.com/docs/alert-api#remove-tags-from-alert)

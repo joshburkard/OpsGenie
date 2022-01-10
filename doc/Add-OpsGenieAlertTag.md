@@ -31,3 +31,7 @@ this examle adds multiple tags to an existing alert:
 ```PowerShell
 Add-OpsGenieAlertTag -APIKey $APIKey -EU -alias $alias -tags @('Test-02', 'Test-03')
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#add-tags-to-alert](https://docs.opsgenie.com/docs/alert-api#add-tags-to-alert)

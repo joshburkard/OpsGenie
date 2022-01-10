@@ -29,3 +29,7 @@ this example escalates to a group by the group id:
 ```PowerShell
 Set-OpsGenieAlertEscalation -APIKey $APIKey -EU -alias $Alias -id $groupid
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#escalate-alert-to-next](https://docs.opsgenie.com/docs/alert-api#escalate-alert-to-next)

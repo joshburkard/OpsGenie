@@ -22,3 +22,7 @@ source | false | string | Display name of the request source. | | 100 chars
 ```PowerShell
 Add-OpsGenieAlertNote -APIKey $APIKey -EU -alias $Alias -note "this is a new note"
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#add-note-to-alert](https://docs.opsgenie.com/docs/alert-api#add-note-to-alert)

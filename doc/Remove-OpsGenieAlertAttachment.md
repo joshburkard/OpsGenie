@@ -20,3 +20,7 @@ attachmentId | true | string | the id of the attachment | 20 x 50 chars
 ```PowerShell
 Remove-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias -attachmentId $attachmentId
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api-continued#delete-alert-attachment](https://docs.opsgenie.com/docs/alert-api-continued#delete-alert-attachment)

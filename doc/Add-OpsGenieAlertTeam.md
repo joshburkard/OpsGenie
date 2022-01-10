@@ -23,3 +23,7 @@ source | false | string | Display name of the request source. | | 100 chars
 ```PowerShell
 Add-OpsGenieAlertTeam -APIKey $APIKey -EU -alias $alias -team $TeamName
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#add-tags-to-alert](https://docs.opsgenie.com/docs/alert-api#add-tags-to-alert)

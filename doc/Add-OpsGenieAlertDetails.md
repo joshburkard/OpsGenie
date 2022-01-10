@@ -27,3 +27,7 @@ $CustomProperties = @{
 
 Add-OpsGenieAlertDetails -APIKey $APIKey -EU -alias $alias -details $CustomProperties
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api-continued#add-details-custom-properties-to-alert](https://docs.opsgenie.com/docs/alert-api-continued#add-details-custom-properties-to-alert)

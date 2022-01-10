@@ -19,3 +19,7 @@ alias | true | string | Client-defined identifier of the alert, that is also the
 ```PowerShell
 Get-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $Alias
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api-continued#list-alert-notes](https://docs.opsgenie.com/docs/alert-api-continued#list-alert-notes)

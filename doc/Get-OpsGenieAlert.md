@@ -36,3 +36,7 @@ this examle gets all existing alerts:
 ```PowerShell
 $alerts = Get-OpsGenieAlert -APIKey $APIKey -EU
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#get-alert](https://docs.opsgenie.com/docs/alert-api#get-alert)

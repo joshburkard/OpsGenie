@@ -20,3 +20,7 @@ FilePath| true | string | the path to the file to attach|
 ```PowerShell
 Add-OpsGenieAlertAttachment -APIKey $APIKey -EU -alias $alias -FilePath $FilePath
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api-continued#create-alert-attachment](https://docs.opsgenie.com/docs/alert-api-continued#create-alert-attachment)

@@ -22,3 +22,7 @@ source | false | string | Display name of the request source. | | 100 chars
 ```PowerShell
 Close-OpsGenieAlert -APIKey $APIKey -EU -alias $Alias
 ```
+
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#close-alert](https://docs.opsgenie.com/docs/alert-api#close-alert)

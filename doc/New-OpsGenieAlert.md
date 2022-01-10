@@ -46,3 +46,6 @@ $NewAlert = New-OpsGenieAlert @AlertParams -wait
 $alias = $NewAlert.data.alertId
 ```
 
+## Links
+
+- [https://docs.opsgenie.com/docs/alert-api#create-alert](https://docs.opsgenie.com/docs/alert-api#create-alert)
