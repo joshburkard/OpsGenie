@@ -5,25 +5,25 @@
 - [Table of Contents](#table-of-contents)
 - [Description](#description)
 - [Global parameter](#global-parameters)
-- [Functions](#functions)
-  - [Add-OpsGenieAlertAttachment](#add-opsgeniealertattachment)
-  - [Add-OpsGenieAlertDetails](#add-opsgeniealertdetails)
-  - [Add-OpsGenieAlertNote](#add-opsgeniealertnote)
-  - [Add-OpsGenieAlertResponder](#add-opsgeniealertresponder)
-  - [Add-OpsGenieAlertTag](#add-opsgeniealerttag)
-  - [Add-OpsGenieAlertTeam](#add-opsgeniealertteam)
-  - [Close-OpsGenieAlert](#close-opsgeniealert)
-  - [Get-OpsGenieAlert](#get-opsgeniealert)
-  - [Get-OpsGenieAlertAttachment](#get-opsgeniealertattachment)
-  - [Get-OpsGenieAlertNote](#get-opsgeniealertnote)
-  - [Get-OpsGenieGuidType](#get-opsgenieguidtype)
-  - [Invoke-OpsGenieAlertAction](#invoke-opsgeniealertaction)
-  - [New-OpsGenieAlert](#new-opsgeniealert)
-  - [Remove-OpsGenieAlert](#remove-opsgeniealert)
-  - [Remove-OpsGenieAlertAttachment](#remove-opsgeniealertattachment)
-  - [Remove-OpsGenieAlertTag](#remove-opsgeniealerttag)
-  - [Set-OpsGenieAlertEscalation](#set-opsgeniealertescalation)
-  - [Set-OpsGenieAlertPriority](#set-opsgeniealertpriority)
+- Functions:
+  - [Add-OpsGenieAlertAttachment](doc/Add-OpsGenieAlertAttachment.md)
+  - [Add-OpsGenieAlertDetails](doc/Add-OpsGenieAlertDetails.md)
+  - [Add-OpsGenieAlertNote](doc/Add-OpsGenieAlertNote.md)
+  - [Add-OpsGenieAlertResponder](doc/Add-OpsGenieAlertResponder.md)
+  - [Add-OpsGenieAlertTag](doc/Add-OpsGenieAlertTag.md)
+  - [Add-OpsGenieAlertTeam](doc/Add-OpsGenieAlertTeam.md)
+  - [Close-OpsGenieAlert](doc/Close-OpsGenieAlert.md)
+  - [Get-OpsGenieAlert](doc/Get-OpsGenieAlert.md)
+  - [Get-OpsGenieAlertAttachment](doc/Get-OpsGenieAlertAttachment.md)
+  - [Get-OpsGenieAlertNote](doc/Get-OpsGenieAlertNote.md)
+  - [Get-OpsGenieGuidType](doc/Get-OpsGenieGuidType.md)
+  - [Invoke-OpsGenieAlertAction](doc/Invoke-OpsGenieAlertAction)
+  - [New-OpsGenieAlert](doc/New-OpsGenieAlert.md)
+  - [Remove-OpsGenieAlert](doc/Remove-OpsGenieAlert)
+  - [Remove-OpsGenieAlertAttachment](doc/Remove-OpsGenieAlertAttachment.md)
+  - [Remove-OpsGenieAlertTag](doc/Remove-OpsGenieAlertTag.md)
+  - [Set-OpsGenieAlertEscalation](doc/Set-OpsGenieAlertEscalation.md)
+  - [Set-OpsGenieAlertPriority](doc/Set-OpsGenieAlertPriority.md)
 - [Prerequisites](#prerequisites)
 - [Examples](#examples)
   - [create a new alert](#create-a-new-alert)
@@ -47,264 +47,6 @@ EU | false | switch | use this switch parameter, if you need to connect to the E
 Proxy | false | string | the URI of the proxy server, only if needed
 ProxyCredential | false | PSCredential | Credentials for the proxy server, only if needed
 
-## Functions
-
-### Add-OpsGenieAlertAttachment
-
-this function add an attachment to an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-FilePath| true | string | the path to the file to attach|
-
-### Add-OpsGenieAlertDetails
-
-This function add additional details (custom propwerties) to an already existing alert in OpsGenie
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-details | true | hashtable | Key-value pairs to add as custom property into alert. You can refer below for example values |
-
-### Add-OpsGenieAlertNote
-
-this function add a note to an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-note| true | string | the note text to add | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-### Add-OpsGenieAlertResponder
-
-this function add a responder to an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-respondertype| true | string | user or team |
-responder | true | string | id or name of the user or team to add |
-note | false | string | Additional alert note to add. | | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-### Add-OpsGenieAlertTag
-
-this function add a tag to an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-tag | true | string | the tag to add |
-note | false | string | Additional alert note to add. | | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-### Add-OpsGenieAlertTeam
-
-this function add a team to an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-team | true | string | the name or id of the team |
-note | false | string | Additional alert note to add. | | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-### Close-OpsGenieAlert
-
-this function close an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | false | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-note | false | string | Additional alert note to add. | | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-### Get-OpsGenieAlert
-
-this function reads alerts
-
-if an alias or an identifier is submited, the result will be filtered to this entry.
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | false | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-identifier | false | string | Identifier of the alert |
-
-### Get-OpsGenieAlertAttachment
-
-this function lists all attachements of an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-
-### Get-OpsGenieAlertNote
-
-this function lists all notes of an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-
-### Get-OpsGenieGuidType
-
-this function receives the type of an alert id
-
-it returns one of this values:
-
-- identifier
-- alias
-- tiny
-- unknown
-
-this function expects this parameters:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-id | true | string | the identiefer, alias or tinyid to check |
-
-### Invoke-OpsGenieAlertAction
-
-this function invokes actions on an alert.
-
-possible values for the parameter **action** are:
-
-- acknowledge
-- assign
-- close
-- CustomAction
-- snooze
-- unacknowledge
-
-every action accepts this parameters:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-action | true | string |
-note | false | string | Additional alert note to add. | | 25000 chars
-user | false | string | Display name of the request owner. | | 100 chars
-source | false | string | Display name of the request source. | | 100 chars
-
-some of this actions need additional parameters:
-
-#### assign
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-owner | true | string | User that the alert will be assigned to. Either id or username of the user should be provided. |
-
-#### CustomAction
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-CustomAction | true | string | The name of the custom action to execute | |
-
-### New-OpsGenieAlert
-
-this function create a new alert
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-message | true | string | The Message for the OpsGenie Alert | 130 chars
-responders | false | hashtable | Teams, users, escalations and schedules that the alert will be routed to send notifications. type field is mandatory for each item, where possible values are team, user, escalation and schedule. If the API Key belongs to a team integration, this field will be overwritten with the owner team. Either id or name of each responder should be provided.You can refer below for example values.| 50 teams or users in total
-alias | false | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-description | false | string | Description field of the alert that is generally used to provide a detailed information about the alert. | 15000 chars
-visibleTo | false | hashtable | Teams and users that the alert will become visible to without sending any notification.type field is mandatory for each item, where possible values are team and user. In addition to the type field, either id or name should be given for teams and either id or username should be given for users. Please note: that alert will be visible to the teams that are specified withinresponders field by default, so there is no need to re-specify them within visibleTo field. You can refer below for example values. | 50 teams or users in total
-actions|false|stringarray|Custom actions that will be available for the alert.|10x50 chars
-tags | false | stringarray | Tags of the alert. | 20x50 chars
-details | false | hashtable | Map of key-value pairs to use as custom properties of the alert. | 8000 chars in total after convert to json
-entity | false | string | Entity field of the alert that is generally used to specify which domain alert is related to. | 512 chars
-source | false | string | Source field of the alert. Default value is IP address of the incoming request. | 100 chars
-priority | false | string | Priority level of the alert. Possible values are P1, P2, P3, P4 and P5. Default is P3 |
-user | false | string | Display name of the request owner. | 100 chars
-note | false | string | Additional note that will be added while creating the alert. | 25000 chars
-wait | false | switch | wait till the alert is created |
-
-
-### Remove-OpsGenieAlert
-
-this function removes an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-
-### Remove-OpsGenieAlertAttachment
-
-this function removes an attachment from an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-attachmentId | true | string | the id of the attachment | 20 x 50 chars
-
-### Remove-OpsGenieAlertTag
-
-this function removes an existing alerts
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-tags | true | string array | tags to remove | 20 x 50 chars
-
-### Set-OpsGenieAlertEscalation
-
-This function escalates an alert in OpsGenie to an escalation group
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-id | false | string array | id of the escalation group |
-name | false | string array | name of the escalation group |
-
-### Set-OpsGenieAlertPriority
-
-This function set the priority of an alert in OpsGenie
-
-possible params are:
-
-parameter | mandatory | type | description | limit
----|---|---|---|---
-alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-priority | true | string | one of this values: P1, P2, P3, P4, P5 |
-
 ## Prerequisites
 
 to interact with the OpsGenie API, you need an OpsGenie Team and an API Key for the Team-integration
@@ -323,9 +65,11 @@ Note: you can create multiple API-integrations with different API-Keys and diffe
 
 ## Examples
 
+you can start with this simple examples. other examples are under each function description.
+
 ### define the connection to OpsGenie
 
-yoz can define a HashTable with the connection parameters
+yoy can define a HashTable with the connection parameters
 
 ```PowerShell
 $OpsGenieConnection = @{
@@ -334,7 +78,6 @@ $OpsGenieConnection = @{
     Proxy           = 'http://proxy.server.com:8080'
     ProxyCredential = $PSCredentialObject
 }
-
 ```
 
 ### create a new alert

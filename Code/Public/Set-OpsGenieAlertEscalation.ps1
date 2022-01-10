@@ -31,7 +31,10 @@
             this parameter is not mandatory. the Default value is P3.
 
         .EXAMPLE
-            Set-OpsGenieAlertPriority -APIKey $APIKey -EU -alias $Alias -priority P4
+            Set-OpsGenieAlertEscalation -APIKey $APIKey -EU -alias $Alias -id $groupname
+
+        .EXAMPLE
+            Set-OpsGenieAlertEscalation -APIKey $APIKey -EU -alias $Alias -id $groupid
 
         .NOTES
             Date, Author, Version, Notes
