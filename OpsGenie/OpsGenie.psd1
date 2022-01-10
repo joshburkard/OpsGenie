@@ -12,13 +12,13 @@
 RootModule = 'OpsGenie.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.1.4'
+ModuleVersion = '0.1.5'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = '18ec5b0e-2b47-42ff-81b2-eaa76bb016eb'
+GUID = '3165b733-f811-4163-894c-5551f646a51c'
 
 # Author of this module
 Author = 'Josh Burkard (josh@burkard.it)'
@@ -75,10 +75,10 @@ FunctionsToExport = 'Add-OpsGenieAlertAttachment', 'Add-OpsGenieAlertDetails',
                'Close-OpsGenieAlert', 'Get-OpsGenieAlert', 
                'Get-OpsGenieAlertAttachment', 'Get-OpsGenieAlertNote', 
                'Get-OpsGenieGuidType', 'Invoke-OpsGenieAlertAction', 
-               'Invoke-OpsGenieWebRequest', 'New-OpsGenieAlert', 
-               'Remove-OpsGenieAlert', 'Remove-OpsGenieAlertAttachment', 
-               'Remove-OpsGenieAlertTag', 'Set-OpsGenieAlertEscalation', 
-               'Set-OpsGenieAlertPriority', 'Test-OpsGenieIsGuid'
+               'New-OpsGenieAlert', 'Remove-OpsGenieAlert', 
+               'Remove-OpsGenieAlertAttachment', 'Remove-OpsGenieAlertTag', 
+               'Set-OpsGenieAlertEscalation', 'Set-OpsGenieAlertPriority', 
+               'Test-OpsGenieIsGuid'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()

@@ -84,9 +84,11 @@ if($TestsResult.FailedCount -eq 0) {
         "#>" | out-File -FilePath $ExportPath -Encoding utf8 -Append
 
         Write-Host "[BUILD] [Code ] Loading Class, public and private functions" -ForegroundColor Green
-        $PublicFunctions  = Get-ChildItem -Path $CodeSourcePath -Filter '*-*.ps1' | sort-object Name
+        $PublicFunctions  = Get-ChildItem -Path $CodeSourcePath -Filter 'Public\*-*.ps1' | sort-object Name
+        $PrivateFunctions  = Get-ChildItem -Path $CodeSourcePath -Filter 'Private\*-*.ps1' | sort-object Name
         $MainPSM1Contents = @()
         $MainPSM1Contents += $PublicFunctions
+        $MainPSM1Contents += $PrivateFunctions
 
         #Creating PSM1
         Write-Host "[BUILD] [START] [PSM1] Building Module PSM1" -ForegroundColor Green
