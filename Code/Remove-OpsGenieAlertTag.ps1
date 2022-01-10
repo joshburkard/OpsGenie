@@ -66,74 +66,32 @@
         ,
         [Parameter(Mandatory=$false)]
         [string]$source
+        ,
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( $alias ) {
-            $Params = @{
-                APIKey = $APIKey
-                alias = $alias
-            }
-            if ( [boolean]$EU ) {
-                $Params.Add('EU', $true )
-            }
-            if ( [boolean]$Proxy ) {
-                $Params.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $Params.Add('ProxyCredential', $ProxyCredential )
-            }
-            $alert = Get-OpsGenieAlert @Params
-            if ( [boolean]$alert ) {
-                $identifier = $alert.id
-            }
+        $URIPart = "alerts/$( $alias )/tags"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?alertIdentifierType=${IDType}"
         }
-        if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/tags"
-        }
-        else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/tags"
-        }
-
-        if ( [boolean]$Proxy ) {
-            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
-        }
-        if ( [boolean]$ProxyCredential ) {
-            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
-        }
-
-        $BodyParams = @{}
-        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
-            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
-        }
-        $BodyParams.Add('tags', $tags)
-        $body = $BodyParams | ConvertTo-Json
-        Write-Verbose $body
-
         $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
-            }
-            'Uri'         = $URI
-            body          = $body
-            ContentType   = 'application/json'
-            'Method'      = 'DELETE'
+            URIPart     = $URIPart
+            Method = 'DELETE'
         }
-        try {
-            $request = Invoke-RestMethod @InvokeParams
-            $ret = $request
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $ErrResp
-            $streamReader.Close()
-            $err = $_.Exception
-            $err.Message
-            $err.Response
-            $err.Status
+
+        $GetParams = @{
+            tags = @( $tags )  -join ','
         }
+        $InvokeParams.Add( 'GetParams', $GetParams )
+
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
         return $ret
     }
     catch {

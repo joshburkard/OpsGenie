@@ -81,17 +81,11 @@
         ,
         [Parameter(Mandatory=$false)]
         [string]$source
+        ,
+        [switch]$wait
     )
     DynamicParam {
         $paramDictionary = New-Object System.Management.Automation.RuntimeDefinedParameterDictionary
-
-        $Attribute = New-Object System.Management.Automation.ParameterAttribute
-        $Attribute.Mandatory = $false
-        $Attribute.HelpMessage = "Additional alert note to add."
-        $attributeCollection = New-Object System.Collections.ObjectModel.Collection[System.Attribute]
-        $attributeCollection.Add($Attribute)
-        $Param = New-Object System.Management.Automation.RuntimeDefinedParameter('note', [string], $attributeCollection)
-        $paramDictionary.Add('note', $Param)
 
         if ($action -eq "assign") {
             $Attribute = New-Object System.Management.Automation.ParameterAttribute
@@ -137,35 +131,10 @@
         $function = $($MyInvocation.MyCommand.Name)
         Write-Verbose "Running $function"
         try {
-            if ( $alias ) {
-                $Params = @{
-                    APIKey = $APIKey
-                    alias = $alias
-                }
-                if ( [boolean]$EU ) {
-                    $Params.Add('EU', $true )
-                }
-                if ( [boolean]$Proxy ) {
-                    $Params.Add('Proxy', $Proxy )
-                }
-                if ( [boolean]$ProxyCredential ) {
-                    $Params.Add('ProxyCredential', $ProxyCredential )
-                }
-                $alert = Get-OpsGenieAlert @Params
-                if ( [boolean]$alert ) {
-                    $identifier = $alert.id
-                }
-            }
-
-            $BodyParams = @{}
-            foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
-                $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
-            }
-            $Methode = 'POST'
-            $ContentType = 'application/json'
+            $PostParams = @{}
+            $URIPart = "alerts/$( $alias )/$( $action )"
             switch ( $action ) {
                 'assign' {
-                    $newaction = $action
                     if ( Test-OpsGenieIsGuid -ObjectGuid $PSBoundParameters['owner'] ) {
                         $owner = @{
                             id = $PSBoundParameters['owner']
@@ -176,62 +145,39 @@
                             username = $PSBoundParameters['owner']
                         }
                     }
-                    $BodyParams.Add( 'owner' , $owner )
+                    $PostParams.Add( 'owner' , $owner )
                 }
                 'CustomAction' {
-                    $newaction = "actions/$( $PSBoundParameters['CustomAction'] )"
+                    $URIPart = "alerts/$( $alias )/action/$( $PSBoundParameters['CustomAction'] )"
                 }
                 'description' {
-                    $newaction = $action
-                    $BodyParams.Add( 'description', $PSBoundParameters['description'] )
+                    $PostParams.Add( 'description', $PSBoundParameters['description'] )
                 }
                 'snooze' {
-                    $newaction = $action
-                    $BodyParams.Add( 'endTime' , ( Get-Date ( Get-Date $PSBoundParameters['endTime'] ).ToUniversalTime() -UFormat '+%Y-%m-%dT%H:%M:%S.000Z' ) )
+                    $PostParams.Add( 'endTime', ( Get-Date ( Get-Date $PSBoundParameters['endTime'] ).ToUniversalTime() -UFormat '+%Y-%m-%dT%H:%M:%S.000Z' ) )
                 }
             }
-            if ( $newaction -ne 'attachments' ) {
-                $body = $BodyParams | ConvertTo-Json
-            }
 
-            if ( [boolean]$EU ) {
-                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
+            $IDType = Get-OpsGenieGuidType -id $alias
+            if ( $IDType -ne 'identifier' ) {
+                $URIPart = "${URIPart}?identifierType=${IDType}"
             }
-            else {
-                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/$( $newaction )"
-            }
-
             $InvokeParams = @{
-                'Headers'     = @{
-                    "Authorization" = "GenieKey $APIKey"
-                }
-                'Uri'         = $URI
-                'ContentType' = $ContentType
-                'Body'        = $body
-                'Method'      = $Methode
+                URIPart     = $URIPart
+                Method      = 'POST'
             }
-            if ( [boolean]$Proxy ) {
-                $InvokeParams.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+                $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
             }
 
-            try {
-                $request = Invoke-RestMethod @InvokeParams
-                $ret = $request
+            foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('note', 'user', 'source') } ) ) {
+                $PostParams.Add( $Key , $PSBoundParameters."$( $Key )")
             }
-            catch {
-                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-                $ErrResp
-                $streamReader.Close()
-                $err = $_.Exception
-                $err.Message
-                $err.Response
-                $err.Status
+            if ( $PostParams -ne @{} ) {
+                $InvokeParams.Add( 'PostParams', $PostParams )
             }
 
+            $ret = Invoke-OpsGenieWebRequest @InvokeParams
             return $ret
         }
         catch {

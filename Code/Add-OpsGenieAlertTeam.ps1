@@ -66,47 +66,31 @@
         ,
         [Parameter(Mandatory=$false)]
         [string]$source
+        ,
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( $alias ) {
-            $Params = @{
-                APIKey = $APIKey
-                alias = $alias
-            }
-            if ( [boolean]$EU ) {
-                $Params.Add('EU', $true )
-            }
-            if ( [boolean]$Proxy ) {
-                $Params.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $Params.Add('ProxyCredential', $ProxyCredential )
-            }
-            $alert = Get-OpsGenieAlert @Params
-            if ( [boolean]$alert ) {
-                $identifier = $alert.id
-            }
+        $URIPart = "alerts/$( $alias )/teams"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
         }
-        if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/teams"
-        }
-        else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/teams"
+        $InvokeParams = @{
+            URIPart     = $URIPart
+            Method      = 'POST'
         }
 
-        if ( [boolean]$Proxy ) {
-            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
-        }
-        if ( [boolean]$ProxyCredential ) {
-            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
 
-        $BodyParams = @{}
-        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('user', 'source', 'note') } ) {
-            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        $PostParams = @{}
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'alias', 'wait', 'team' ) } ) ) {
+            $PostParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
+
         if ( Test-OpsGenieIsGuid -ObjectGuid $team ) {
             $teamobj = @{
                 id = $team
@@ -117,32 +101,13 @@
                 name = $team
             }
         }
-        $BodyParams.Add( 'team' , $teamobj )
-        $body = $BodyParams | ConvertTo-Json
+        $PostParams.Add( 'team' , $teamobj )
 
-        $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
-            }
-            'Uri'         = $URI
-            body = $body
-            ContentType   = 'application/json'
-            'Method'      = 'POST'
-        }
-        try {
-            $request = Invoke-RestMethod @InvokeParams
-            $ret = $request
-        }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $ErrResp
-            $streamReader.Close()
-            $err = $_.Exception
-            $err.Message
-            $err.Response
-            $err.Status
-        }
+
+        $InvokeParams.Add( 'PostParams', $PostParams )
+
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
         return $ret
     }
     catch {

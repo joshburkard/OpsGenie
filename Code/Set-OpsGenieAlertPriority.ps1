@@ -58,10 +58,38 @@
         [Parameter(Mandatory=$false)]
         [ValidateSet("P1","P2","P3","P4","P5")]
         [string]$priority
+        ,
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
+        $URIPart = "alerts/$( $alias )/priority"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
+        }
+        $InvokeParams = @{
+            URIPart     = $URIPart
+            Method      = 'POST'
+        }
+
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+
+        $PostParams = @{}
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'alias', 'wait' ) } ) ) {
+            $PostParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+
+        $InvokeParams.Add( 'PostParams', $PostParams )
+
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
+        return $ret
+
+        <#
         if ( [boolean]$EU ) {
             $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/priority?identifierType=alias"
         }
@@ -109,6 +137,7 @@
         }
 
         return $ret
+        #>
     }
     catch {
         $ret = $_

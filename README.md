@@ -6,11 +6,12 @@
 - [Description](#description)
 - [Global parameter](#global-parameters)
 - [Functions](#functions)
-  - [Add-OpsGenieAlertAttachment](#Add-OpsGenieAlertAttachment)
-  - [Add-OpsGenieAlertNote](#Add-OpsGenieAlertNote)
-  - [Add-OpsGenieAlertResponder](#Add-OpsGenieAlertResponder)
-  - [Add-OpsGenieAlertTag](#Add-OpsGenieAlertTag)
-  - [Add-OpsGenieAlertTeam](#Add-OpsGenieAlertTeam)
+  - [Add-OpsGenieAlertAttachment](#add-opsgeniealertattachment)
+  - [Add-OpsGenieAlertDetails](#add-opsgeniealertdetails)
+  - [Add-OpsGenieAlertNote](#add-opsgeniealertnote)
+  - [Add-OpsGenieAlertResponder](#add-opsgeniealertresponder)
+  - [Add-OpsGenieAlertTag](#add-opsgeniealerttag)
+  - [Add-OpsGenieAlertTeam](#add-opsgeniealertteam)
   - [Close-OpsGenieAlert](#close-opsgeniealert)
   - [Get-OpsGenieAlert](#get-opsgeniealert)
   - [Get-OpsGenieAlertAttachment](#get-opsgeniealertattachment)
@@ -21,8 +22,8 @@
   - [Remove-OpsGenieAlert](#remove-opsgeniealert)
   - [Remove-OpsGenieAlertAttachment](#remove-opsgeniealertattachment)
   - [Remove-OpsGenieAlertTag](#remove-opsgeniealerttag)
-  - [Set-OpsGenieAlertEscalation](#Set-OpsGenieAlertEscalation)
-  - [Set-OpsGenieAlertPriority](#Set-OpsGenieAlertPriority)
+  - [Set-OpsGenieAlertEscalation](#set-opsgeniealertescalation)
+  - [Set-OpsGenieAlertPriority](#set-opsgeniealertpriority)
 - [Prerequisites](#prerequisites)
 - [Examples](#examples)
   - [create a new alert](#create-a-new-alert)
@@ -58,6 +59,17 @@ parameter | mandatory | type | description | limit
 ---|---|---|---|---
 alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
 FilePath| true | string | the path to the file to attach|
+
+### Add-OpsGenieAlertDetails
+
+This function add additional details (custom propwerties) to an already existing alert in OpsGenie
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+details | true | hashtable | Key-value pairs to add as custom property into alert. You can refer below for example values |
 
 ### Add-OpsGenieAlertNote
 
@@ -160,14 +172,6 @@ possible params are:
 parameter | mandatory | type | description | limit
 ---|---|---|---|---
 alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
-
-### Get-OpsGenieAlertAttachment
-
-this function receives an attachment list for an alert
-
-### Get-OpsGenieAlertNote
-
-this function receives the notes for an alert
 
 ### Get-OpsGenieGuidType
 
@@ -277,6 +281,29 @@ parameter | mandatory | type | description | limit
 ---|---|---|---|---
 alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
 tags | true | string array | tags to remove | 20 x 50 chars
+
+### Set-OpsGenieAlertEscalation
+
+This function escalates an alert in OpsGenie to an escalation group
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+id | false | string array | id of the escalation group |
+name | false | string array | name of the escalation group |
+
+### Set-OpsGenieAlertPriority
+
+This function set the priority of an alert in OpsGenie
+
+possible params are:
+
+parameter | mandatory | type | description | limit
+---|---|---|---|---
+alias | true | string | Client-defined identifier of the alert, that is also the key element of Alert De-Duplication.|512 chars
+priority | true | string | one of this values: P1, P2, P3, P4, P5 |
 
 ## Prerequisites
 

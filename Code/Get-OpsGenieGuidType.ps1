@@ -9,7 +9,7 @@
             possible returns are:
             - alias
             - identifier
-            - tinyid
+            - tiny
             - unknown
 
         .PARAMETER id
@@ -44,7 +44,7 @@
             try {
                 $intid = [int]$id
                 if ( [string]$intid -eq $id ) {
-                    return 'tinyid'
+                    return 'tiny'
                 }
             }
             catch {

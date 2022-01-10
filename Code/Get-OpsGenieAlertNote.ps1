@@ -53,62 +53,24 @@
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( $alias ) {
-            $Params = @{
-                APIKey = $APIKey
-                alias = $alias
-            }
-            if ( [boolean]$EU ) {
-                $Params.Add('EU', $true )
-            }
-            if ( [boolean]$Proxy ) {
-                $Params.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $Params.Add('ProxyCredential', $ProxyCredential )
-            }
-            $alert = Get-OpsGenieAlert @Params
-            if ( [boolean]$alert ) {
-                $identifier = $alert.id
-            }
+        $URIPart = "alerts/$( $alias )/notes"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
         }
-        if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/notes"
-        }
-        else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/notes"
-        }
-
-        if ( [boolean]$Proxy ) {
-            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
-        }
-        if ( [boolean]$ProxyCredential ) {
-            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
-        }
-
         $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
-            }
-            'Uri'         = $URI
-            'Method'      = 'GET'
+            URIPart     = $URIPart
+            Method = 'GET'
         }
-        try {
-            $res = Invoke-RestMethod @InvokeParams
-            $ret = $res.data.id
+
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $streamReader.Close()
-            $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
+
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams -Verbose
+
+        if ( $ret.StatusCode -eq 200 ) {
+            return $ret.data
         }
 
         return $ret
@@ -131,5 +93,4 @@
         # throw with only the last error
         throw $ret
     }
-
 }

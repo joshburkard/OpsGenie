@@ -65,99 +65,27 @@
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( -not [boolean]$identifier ) {
-            if ( [boolean]$EU ) {
-                $URI = "https://api.eu.opsgenie.com/v2/alerts"
-            }
-            else {
-                $URI = "https://api.opsgenie.com/v2/alerts"
-            }
-
-            $InvokeParams = @{
-                'Headers'     = @{
-                    "Authorization" = "GenieKey $APIKey"
-                }
-                'Uri'         = $URI
-                'ContentType' = 'application/json'
-                'Method'      = 'GET'
-            }
-
-            if ( [boolean]$Proxy ) {
-                $InvokeParams.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
-            }
-
-            try {
-                $request = Invoke-RestMethod @InvokeParams
-            }
-            catch {
-                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-                $streamReader.Close()
-                $err = $_.Exception
-                $ret = @{
-                    ErrResp = $ErrResp
-                    Message = $err.Message
-                    Response = $err.Response
-                    Status = $err.Status
-                }
-                throw $ret
-            }
-
-            $datas = $request.data
-            if ( [boolean]$alias ) {
-                $datas = $datas | Where-Object { $_.alias -eq $alias }
-                $identifier = $datas.id
-            }
-            else {
-                $identifier = $null
-            }
+        $URIPart = "alerts/$( $alias )"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
         }
-        if ( [boolean]$identifier ) {
-            if ( [boolean]$EU ) {
-                $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )"
-            }
-            else {
-                $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )"
-            }
-
-            $InvokeParams = @{
-                'Headers'     = @{
-                    "Authorization" = "GenieKey $APIKey"
-                }
-                'Uri'         = $URI
-                'ContentType' = 'application/json'
-                'Method'      = 'GET'
-            }
-
-            if ( [boolean]$Proxy ) {
-                $InvokeParams.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
-            }
-
-            try {
-                $request = Invoke-RestMethod @InvokeParams
-            }
-            catch {
-                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-                $streamReader.Close()
-                $err = $_.Exception
-                $ret = @{
-                    ErrResp = $ErrResp
-                    Message = $err.Message
-                    Response = $err.Response
-                    Status = $err.Status
-                }
-                throw $ret
-            }
-            $datas = $request.data
+        $InvokeParams = @{
+            URIPart     = $URIPart
+            Method = 'GET'
         }
-        $ret = $datas
+
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+
+        $result = Invoke-OpsGenieWebRequest @InvokeParams -PostParams $PostParams
+        # $result.data | ConvertTo-Json
+
+        if ( $result.StatusCode -eq 200 ) {
+            $ret = $result.data
+        }
+
         return $ret
     }
     catch {

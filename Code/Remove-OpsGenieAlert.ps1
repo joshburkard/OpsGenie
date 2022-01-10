@@ -64,50 +64,28 @@
         ,
         [Parameter(Mandatory=$true)]
         [ValidateLength(1,512)][string]$alias
+        ,
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )?identifierType=alias"
+        $URIPart = "alerts/$( $alias )"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
         }
-        else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )?identifierType=alias"
-        }
-
         $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
-            }
-            'Uri'         = $URI
-            'ContentType' = 'application/json'
-            'Method'      = 'DELETE'
-        }
-        if ( [boolean]$Proxy ) {
-            $InvokeParams.Add('Proxy', $Proxy )
-        }
-        if ( [boolean]$ProxyCredential ) {
-            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            URIPart     = $URIPart
+            Method = 'DELETE'
         }
 
-        try {
-            $request = Invoke-RestMethod @InvokeParams
-        }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $streamReader.Close()
-            $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential','wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
 
-        $ret = $request.requestId
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams -Verbose
+
         return $ret
     }
     catch {

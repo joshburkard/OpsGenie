@@ -1,10 +1,10 @@
 ﻿function Set-OpsGenieAlertEscalation {
     <#
         .SYNOPSIS
-            This function creates a new alert in OpsGenie
+            This function escalates an alert in OpsGenie to an escalation group
 
         .DESCRIPTION
-            This function creates a new alert in OpsGenie through the API v2
+            This function escalates an alert in OpsGenie to an escalation group
 
             more info about the API under https://docs.opsgenie.com/docs/alert-api
 
@@ -41,29 +41,74 @@
 
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true)]
+        [parameter(Mandatory=$true,ParameterSetName="id")]
+        [parameter(Mandatory=$true,ParameterSetName="name")]
         [string]$APIKey
         ,
+        [parameter(Mandatory=$false,ParameterSetName="id")]
+        [parameter(Mandatory=$false,ParameterSetName="name")]
         [switch]$EU
         ,
-        [Parameter(Mandatory=$false)]
+        [parameter(Mandatory=$false,ParameterSetName="id")]
+        [parameter(Mandatory=$false,ParameterSetName="name")]
         [string]$Proxy
         ,
-        [Parameter(Mandatory=$false)]
+        [parameter(Mandatory=$false,ParameterSetName="id")]
         [System.Management.Automation.PSCredential]$ProxyCredential
         ,
-        [Parameter(Mandatory=$false)]
+        [parameter(Mandatory=$true,ParameterSetName="id")]
+        [parameter(Mandatory=$true,ParameterSetName="name")]
         [ValidateLength(1,512)][string]$alias
         ,
-        [parameter(Mandatory=$true,ParameterSetName="id")]
+        [parameter(Mandatory=$false,ParameterSetName="id")]
         [string]$id
         ,
-        [parameter(Mandatory=$true,ParameterSetName="name")]
+        [parameter(Mandatory=$false,ParameterSetName="name")]
         [string]$name
+        ,
+        [parameter(Mandatory=$false,ParameterSetName="id")]
+        [parameter(Mandatory=$false,ParameterSetName="name")]
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
+        $URIPart = "alerts/$( $alias )/escalate"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
+        }
+        $InvokeParams = @{
+            URIPart     = $URIPart
+            Method      = 'POST'
+        }
+
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+
+        $PostParams = @{}
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'alias', 'wait', 'name','id' ) } ) ) {
+            $PostParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+
+        if ( [boolean]$id ) {
+            $PostParams.Add( 'escalation' , @{ id = $id } )
+        }
+        if ( [boolean]$name ) {
+            $PostParams.Add( 'escalation' , @{ name = $name } )
+        }
+
+        $InvokeParams.Add( 'PostParams', $PostParams )
+
+
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
+        return $ret
+
+        <#
+
+
         if ( [boolean]$EU ) {
             $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/escalate?identifierType=alias"
         }
@@ -115,6 +160,7 @@
 
         $ret = $request.requestId
         return $ret
+        #>
     }
     catch {
         $ret = $_

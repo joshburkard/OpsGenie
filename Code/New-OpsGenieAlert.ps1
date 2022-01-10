@@ -196,70 +196,22 @@ function New-OpsGenieAlert {
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts"
-        }
-        else {
-            $URI = "https://api.opsgenie.com/v2/alerts"
-        }
-
-        $BodyParams = @{}
-        foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'Proxy', 'ProxyCredential', 'EU','alias') } ) {
-            $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
-        }
-        if ( -not [boolean]$alias ) {
-            $alias = ( New-Guid ).Guid
-        }
-        $BodyParams.Add('alias', $alias )
-        $body = $BodyParams | ConvertTo-Json
-
         $InvokeParams = @{
-            'Headers'     = @{
-                "Authorization" = "GenieKey $APIKey"
-            }
-            'Uri'         = $URI
-            'ContentType' = 'application/json'
-            'Body'        = $body
-            'Method'      = 'POST'
+            URIPart = 'alerts'
+            Method = 'POST'
         }
-        if ( [boolean]$Proxy ) {
-            $InvokeParams.Add('Proxy', $Proxy )
-        }
-        if ( [boolean]$ProxyCredential ) {
-            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential','wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
 
-        try {
-            $request = Invoke-RestMethod @InvokeParams
+        $PostParams = @{}
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'alias', 'wait' ) } ) ) {
+            $PostParams.Add( $Key , $PSBoundParameters."$( $Key )")
         }
-        catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $streamReader.Close()
-            $err = $_.Exception
-            $ret = @{
-                ErrResp = $ErrResp
-                Message = $err.Message
-                Response = $err.Response
-                Status = $err.Status
-            }
-            throw $ret
-        }
+        $InvokeParams.Add( 'PostParams', $PostParams )
 
-        if ( [boolean]$wait ) {
-            $AlertStartTime = Get-Date
-            $alert = Get-OpsGenieAlert -APIKey $APIKey -EU -alias $alias
-            do {
-                $alert = Get-OpsGenieAlert -APIKey $APIKey -EU -alias $alias
-                if ( -not [boolean]$alert ) {
-                    Start-Sleep -Seconds 1
-                }
-            } until ( ( [boolean]$alert ) -or ( ( Get-Date ) -gt $AlertStartTime.AddMinutes(5) ))
-            if ( -not [boolean]$alert ) {
-                throw "alert not created after 5 minutes"
-            }
-        }
-        $ret = $request.data
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
         return $ret
     }
     catch {

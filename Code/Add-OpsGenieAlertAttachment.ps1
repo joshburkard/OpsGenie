@@ -61,37 +61,44 @@
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
-        if ( $alias ) {
-            $Params = @{
-                APIKey = $APIKey
-                alias = $alias
-            }
-            if ( [boolean]$EU ) {
-                $Params.Add('EU', $true )
-            }
-            if ( [boolean]$Proxy ) {
-                $Params.Add('Proxy', $Proxy )
-            }
-            if ( [boolean]$ProxyCredential ) {
-                $Params.Add('ProxyCredential', $ProxyCredential )
-            }
-            $alert = Get-OpsGenieAlert @Params
-            if ( [boolean]$alert ) {
-                $identifier = $alert.id
-            }
+        $InvokeParams = @{
+            URIPart     = 'alerts'
+            Method      = 'GET'
+            <#
+            alias       = $alias
+            APIKey = $APIKey
+            EU = $true
+            #>
         }
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('alias', 'APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
+        $CurrentProxy = [system.net.webrequest]::defaultwebproxy
+        $CurrentSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+        Add-Type -AssemblyName System.Net.Http
+
         if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/attachments"
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $ret.data.id )/attachments"
         }
         else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/attachments"
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $ret.data.id )/attachments"
         }
 
         if ( [boolean]$Proxy ) {
-            [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+            [System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy($Proxy)
+            # [System.Net.Http.HttpClient]::DefaultProxy = New-Object System.Net.WebProxy($Proxy)
+            if ( [boolean]$ProxyCredential ) {
+                [System.Net.WebRequest]::DefaultWebProxy.Credentials = $ProxyCredential
+                # [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+            }
         }
-        if ( [boolean]$ProxyCredential ) {
-            [System.Net.Http.HttpClient]::DefaultProxy.Credentials = $ProxyCredential
+        else {
+            $TempProxy = new-object System.Net.WebProxy
+            [System.Net.WebRequest]::DefaultWebProxy = $TempProxy
         }
         Write-Verbose $URI
         $httpClient = New-Object System.Net.Http.HttpClient
@@ -101,9 +108,13 @@
         $form.Add( $binaryContent, "file", ( [System.IO.FileInfo]$FilePath ).Name )
         $httpClient.DefaultRequestHeaders.Authorization = "GenieKey $APIKey"
         $request = $httpClient.PostAsync( $URI, $form )
-        $ret = $request.Result
+        $contentJSON = $request.Result.Content.ReadAsStringAsync().Result
+        $content = $contentJSON | ConvertFrom-Json
 
-        return $ret
+        [System.Net.WebRequest]::DefaultWebProxy = $CurrentProxy
+        [Net.ServicePointManager]::SecurityProtocol = $CurrentSecurityProtocol
+
+        return $content.result
     }
     catch {
         $ret = $_

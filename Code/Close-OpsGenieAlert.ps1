@@ -73,15 +73,58 @@
         ,
         [Parameter(Mandatory=$false)]
         [ValidateLength(1,25000)][string]$note
+        ,
+        [switch]$wait
     )
     $function = $($MyInvocation.MyCommand.Name)
     Write-Verbose "Running $function"
     try {
+        $URIPart = "alerts/$( $alias )/close"
+        $IDType = Get-OpsGenieGuidType -id $alias
+        if ( $IDType -ne 'identifier' ) {
+            $URIPart = "${URIPart}?identifierType=${IDType}"
+        }
+        $InvokeParams = @{
+            URIPart     = $URIPart
+            Method = 'POST'
+        }
+
+        foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'wait' ) } ) ) {
+            $InvokeParams.Add( $Key , $PSBoundParameters."$( $Key )")
+        }
+
+        if ( $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'alias', 'wait' ) } ) {
+            $PostParams = @{}
+            foreach ( $Key in ( $PSBoundParameters.Keys | Where-Object { $_ -notin @('APIKey', 'EU', 'Proxy', 'ProxyCredential', 'alias', 'wait' ) } ) ) {
+                $PostParams.Add( $Key , $PSBoundParameters."$( $Key )")
+            }
+            $InvokeParams.Add( 'PostParams', $PostParams )
+        }
+
+        $ret = Invoke-OpsGenieWebRequest @InvokeParams
+
+        return $ret
+
+        <#
+
+            $CurrentProxy = [system.net.webrequest]::defaultwebproxy
+        $CurrentSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+		if ( $alias ) {
+            $Params = @{}
+            foreach ( $Key in $PSBoundParameters.Keys | Where-Object { $_ -in @('APIKey', 'alias', 'EU', 'Proxy', 'ProxyCredential') } ) {
+                $BodyParams.Add( $Key , $PSBoundParameters."$( $Key )")
+            }
+            $alert = Get-OpsGenieAlert @Params
+            if ( [boolean]$alert ) {
+                $identifier = $alert.id
+            }
+        }
         if ( [boolean]$EU ) {
-            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $alias )/close?identifierType=alias"
+            $URI = "https://api.eu.opsgenie.com/v2/alerts/$( $identifier )/close"
         }
         else {
-            $URI = "https://api.opsgenie.com/v2/alerts/$( $alias )/close?identifierType=alias"
+            $URI = "https://api.opsgenie.com/v2/alerts/$( $identifier )/close"
         }
 
         $BodyParams = @{}
@@ -101,19 +144,28 @@
         }
         if ( [boolean]$Proxy ) {
             $InvokeParams.Add('Proxy', $Proxy )
+            if ( [boolean]$ProxyCredential ) {
+                $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+            }
         }
-        if ( [boolean]$ProxyCredential ) {
-            $InvokeParams.Add('ProxyCredential', $ProxyCredential )
+        else {
+            $TempProxy = new-object System.Net.WebProxy
+			[System.Net.WebRequest]::DefaultWebProxy = $TempProxy
         }
 
         try {
             $request = Invoke-RestMethod @InvokeParams
         }
         catch {
-            $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-            $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
-            $streamReader.Close()
             $err = $_.Exception
+            if ( [boolean]$_.Exception.Response ) {
+                $streamReader = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                $ErrResp = $streamReader.ReadToEnd() | ConvertFrom-Json
+                $streamReader.Close()
+            }
+            else {
+                $ErrResp = 'Error ResponseStream is empty'
+            }
             $ret = @{
                 ErrResp = $ErrResp
                 Message = $err.Message
@@ -123,8 +175,11 @@
             throw $ret
         }
 
+        [System.Net.WebRequest]::DefaultWebProxy = $CurrentProxy
+        [Net.ServicePointManager]::SecurityProtocol = $CurrentSecurityProtocol
         $ret = $request.requestId
         return $ret
+        #>
     }
     catch {
         $ret = $_
