@@ -1,5 +1,5 @@
 ﻿<#
-    Generated at 01/10/2022 20:09:16 by Josh Burkard (josh@burkard.it)
+    Generated at 01/20/2022 11:28:48 by Josh Burkard (josh@burkard.it)
 #>
 #region namespace OpsGenie
 function Add-OpsGenieAlertAttachment {
@@ -2229,7 +2229,10 @@ function Set-OpsGenieAlertEscalation {
             this parameter is not mandatory. the Default value is P3.
 
         .EXAMPLE
-            Set-OpsGenieAlertPriority -APIKey $APIKey -EU -alias $Alias -priority P4
+            Set-OpsGenieAlertEscalation -APIKey $APIKey -EU -alias $Alias -id $groupname
+
+        .EXAMPLE
+            Set-OpsGenieAlertEscalation -APIKey $APIKey -EU -alias $Alias -id $groupid
 
         .NOTES
             Date, Author, Version, Notes
@@ -2539,63 +2542,6 @@ function Set-OpsGenieAlertPriority {
         throw $ret
     }
 }
-function Test-OpsGenieIsGuid {
-    <#
-        .SYNOPSIS
-            This function checks if a string contains a GUID
-
-        .DESCRIPTION
-            This function checks if a string contains a GUID
-
-        .PARAMETER ObjectGuid
-            the string to check
-
-        .EXAMPLE
-            Test-OpsGenieIsGuid -ObjectGuid 'TestString'                           # returns false
-            Test-OpsGenieIsGuid -ObjectGuid 'a50ccfd6-892d-491d-8f01-a5a4c6758705' # returns true
-
-        .NOTES
-            Date, Author, Version, Notes
-            28.07.2021, Josua Burkard, 0.0.00001, initial creation
-
-    #>
-
-    [CmdletBinding()]
-    [OutputType([bool])]
-    param
-    (
-        [Parameter(Mandatory = $true)]
-        [string]$ObjectGuid
-    )
-    $function = $($MyInvocation.MyCommand.Name)
-    Write-Verbose "Running $function"
-    try {
-
-        # Define verification regex
-        [regex]$guidRegex = '(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$'
-
-        # Check guid against regex
-        return $ObjectGuid -match $guidRegex
-    }
-    catch {
-        $ret = $_
-
-        Write-Output "Error occured in function $( $function )"
-        if ( $_.InvocationInfo.ScriptLineNumber ){
-            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
-            Write-Output $_.Exception
-        }
-        else {
-            Write-Output $_.Exception.Line
-        }
-
-        # clear all errors
-        $error.Clear()
-
-        # throw with only the last error
-        throw $ret
-    }
-}
 function Invoke-OpsGenieWebRequest {
     <#
         .SYNOPSIS
@@ -2809,7 +2755,7 @@ function Invoke-OpsGenieWebRequest {
         }
         else {
             $TempProxy = new-object System.Net.WebProxy
-            [system.net.webrequest]::defaultwebproxy = $TempProxy
+            [System.Net.WebRequest]::DefaultWebProxy = $TempProxy
         }
 
         try {
@@ -2888,6 +2834,63 @@ function Invoke-OpsGenieWebRequest {
         [System.Net.WebRequest]::DefaultWebProxy = $CurrentProxy
         [Net.ServicePointManager]::SecurityProtocol = $CurrentSecurityProtocol
         return $ret
+    }
+    catch {
+        $ret = $_
+
+        Write-Output "Error occured in function $( $function )"
+        if ( $_.InvocationInfo.ScriptLineNumber ){
+            Write-Output "Error Occured at line: $($_.InvocationInfo.ScriptLineNumber)"
+            Write-Output $_.Exception
+        }
+        else {
+            Write-Output $_.Exception.Line
+        }
+
+        # clear all errors
+        $error.Clear()
+
+        # throw with only the last error
+        throw $ret
+    }
+}
+function Test-OpsGenieIsGuid {
+    <#
+        .SYNOPSIS
+            This function checks if a string contains a GUID
+
+        .DESCRIPTION
+            This function checks if a string contains a GUID
+
+        .PARAMETER ObjectGuid
+            the string to check
+
+        .EXAMPLE
+            Test-OpsGenieIsGuid -ObjectGuid 'TestString'                           # returns false
+            Test-OpsGenieIsGuid -ObjectGuid 'a50ccfd6-892d-491d-8f01-a5a4c6758705' # returns true
+
+        .NOTES
+            Date, Author, Version, Notes
+            28.07.2021, Josua Burkard, 0.0.00001, initial creation
+
+    #>
+
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param
+    (
+        [Parameter(Mandatory = $true)]
+        [string]$ObjectGuid
+    )
+    $function = $($MyInvocation.MyCommand.Name)
+    Write-Verbose "Running $function"
+    try {
+
+        # Define verification regex
+        [regex]$guidRegex = '(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$'
+
+        # Check guid against regex
+        return $ObjectGuid -match $guidRegex
     }
     catch {
         $ret = $_

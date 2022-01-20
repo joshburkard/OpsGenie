@@ -27,6 +27,7 @@ Write-Host "[BUILD] [START] Launching Build Process" -ForegroundColor Green
         $ModuleAuthor      = $ModuleSettings.ModuleAuthor
         $ModuleCompany     = $ModuleSettings.ModuleCompany
         $ModulePrefix      = $ModuleSettings.ModulePrefix
+        $ProjectUri      = $ModuleSettings.ProjectUri
     }
     else{
         $ModuleName        = Read-Host 'Enter the name of the module without the extension'
@@ -35,6 +36,7 @@ Write-Host "[BUILD] [START] Launching Build Process" -ForegroundColor Green
         $ModuleAuthor      = Read-Host 'Enter the Author of this module'
         $ModuleCompany     = Read-Host 'Enter the Company or vendor of this module'
         $ModulePrefix      = Read-Host 'Enter the Prefix for all functions of this module'
+        $ProjectUri        = Read-Host 'Enter the Project URI for this module'
     }
     [PSCustomObject] @{
         ModuleName        = $ModuleName
@@ -43,6 +45,7 @@ Write-Host "[BUILD] [START] Launching Build Process" -ForegroundColor Green
         ModuleAuthor      = $ModuleAuthor
         ModuleCompany     = $ModuleCompany
         ModulePrefix      = $ModulePrefix
+        ProjectUri        = $ProjectUri
     } | ConvertTo-Json | Out-File -FilePath $Settings -Encoding utf8
 #endregion
 
@@ -114,7 +117,7 @@ if($TestsResult.FailedCount -eq 0) {
         Write-Host "[BUILD] [PSD1 ] Adding functions to export" -ForegroundColor Green
         $FunctionsToExport = $PublicFunctions.BaseName
         $Manifest = Join-Path -Path $ModuleFolderPath -ChildPath "$($ModuleName).psd1"
-        Update-ModuleManifest -Path $Manifest -FunctionsToExport $FunctionsToExport -AliasesToExport '*'
+        Update-ModuleManifest -Path $Manifest -FunctionsToExport $FunctionsToExport -AliasesToExport '*' -ProjectUri $ProjectUri
 
         Write-Host "[BUILD] [END  ] [PSD1] building Manifest" -ForegroundColor Green
     #endregion

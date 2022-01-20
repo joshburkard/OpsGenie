@@ -211,7 +211,7 @@
         }
         else {
             $TempProxy = new-object System.Net.WebProxy
-            [system.net.webrequest]::defaultwebproxy = $TempProxy
+            [System.Net.WebRequest]::DefaultWebProxy = $TempProxy
         }
 
         try {
