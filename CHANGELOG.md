@@ -2,6 +2,7 @@
 
 Version | Description | Date | Author
 -|-|-|-
+0.1.00007 | updated Invoke-OpsGenieWebRequest InvokeParams with UseBasicParsing for use on devices without IE First Run | 2022-06-16 | Brad Hemsley
 0.1.00006 | added Project URI to module manifest | 2022-01-20 | Josh Burkard
 0.1.00005 | moving public and private functions to differnet folders | 2022-01-10 | Josh Burkard
 0.1.00004 | simplified all function through use a separate function Invoke-OpsGenieWebRequest to control general web request parameters Proxy, ProxyCredentials and wait | 2021-12-14 | Josh Burkard
