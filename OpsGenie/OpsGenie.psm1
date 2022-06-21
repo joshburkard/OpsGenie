@@ -2736,9 +2736,10 @@ function Invoke-OpsGenieWebRequest {
                 # "Authorization" = "GenieKey $($APIKey)a"
                 "Authorization" = "GenieKey $APIKey"
             }
-            'Uri'         = $URI
-            'ContentType' = 'application/json'
-            'Method'      = $Method
+            'Uri'             = $URI
+            'ContentType'     = 'application/json'
+            'Method'          = $Method
+            'UseBasicParsing' = $true
         }
 
         if ( ( [boolean]$PostParams ) -and ( $Method -notin @('GET') ) ) {
